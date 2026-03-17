@@ -1757,37 +1757,37 @@
             });
 
             // ==================== 全局操作函数 ====================
-            window.prepareOrder = async function(orderId) {
-                const confirmed = await showConfirm('Préparer la commande', 'Confirmer la préparation ?');
-                if (!confirmed) return;
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        status: ORDER_STATUS.PREPARE,
-                        prepared_by: currentUser,
-                        prepared_at: new Date().toISOString()
-                    })
-                    .eq('id', orderId);
-                if (!error) await loadOrders();
-            };
-
-            window.departOrder = async function(orderId) {
-                const confirmed = await showConfirm('Démarrer la livraison', 'Confirmer le départ ?');
-                if (!confirmed) return;
-                
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        status: ORDER_STATUS.EN_COURS,
-                        driver_departure_at: new Date().toISOString()
-                    })
-                    .eq('id', orderId);
-                    
-                if (!error) {
-                    await loadOrders();
-                }
-            };
-
+         window.prepareOrder = async function(orderId) {
+    const confirmed = await showConfirm('Préparer la commande', 'Confirmer la préparation ?');
+    if (!confirmed) return;
+    const { error } = await supabase
+        .from('orders')
+        .update({
+            status: ORDER_STATUS.PREPARE,
+            prepared_by: currentUser,
+            prepared_at: new Date().toISOString(),
+            sms_sent_to_customer: false  // 添加这行
+        })
+        .eq('id', orderId);
+    if (!error) await loadOrders();
+};
+          window.departOrder = async function(orderId) {
+    const confirmed = await showConfirm('Démarrer la livraison', 'Confirmer le départ ?');
+    if (!confirmed) return;
+    
+    const { error } = await supabase
+        .from('orders')
+        .update({
+            status: ORDER_STATUS.EN_COURS,
+            driver_departure_at: new Date().toISOString(),
+            sms_sent_to_customer: false  // 添加这行，重置短信状态
+        })
+        .eq('id', orderId);
+        
+    if (!error) {
+        await loadOrders();
+    }
+};
             window.openSignatureModal = function(orderId) {
                 currentOrderId = orderId;
                 signatureModal.style.display = 'flex';
@@ -2364,26 +2364,33 @@ async function loadDrivers() {
             });
 
             // ==================== 生成短信内容 ====================
-            function generateSMSMessage(order, chauffeurName, chauffeurPhone) {
-                let timeText = '';
-                
-                if (order.time_req) {
-                    if (order.time_req.type === 'fixed') {
-                        timeText = `à ${order.time_req.value}`;
-                    } else if (order.time_req.type === 'before') {
-                        timeText = `avant ${order.time_req.value}`;
-                    } else if (order.time_req.type === 'range') {
-                        timeText = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
-                    } else {
-                        timeText = `entre 9h et 18h`;
-                    }
-                } else {
-                    timeText = `entre 9h et 18h`;
-                }
-                
-                return `📦 Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeText}.\nVotre livreur: ${chauffeurName} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
-            }
-
+         function generateSMSMessage(order, chauffeurName, chauffeurPhone) {
+    let timeText = '';
+    
+    if (order.time_req) {
+        if (order.time_req.type === 'fixed') {
+            timeText = `à ${order.time_req.value}`;
+        } else if (order.time_req.type === 'before') {
+            timeText = `avant ${order.time_req.value}`;
+        } else if (order.time_req.type === 'range') {
+            timeText = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
+        } else {
+            timeText = `entre 9h et 18h`;
+        }
+    } else {
+        timeText = `entre 9h et 18h`;
+    }
+    
+    // 生成三种语言的短信内容
+    const frenchText = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeText}.\nVotre livreur: ${chauffeurName} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
+    
+    const englishText = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeText}.\nYour driver: ${chauffeurName} 📞 ${chauffeurPhone || 'Not available'}\nPlease keep your phone accessible.`;
+    
+    const chineseText = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeText} 配送。\n您的司机: ${chauffeurName} 📞 ${chauffeurPhone || '暂无电话'}\n请保持电话畅通。`;
+    
+    // 合并三种语言，用分隔线分开
+    return `${frenchText}\n\n---\n\n${englishText}\n\n---\n\n${chineseText}`;
+}
             // ==================== Leaflet 地图初始化 ====================
             function initMap() {
                 if (!map) {
@@ -3005,20 +3012,50 @@ async function loadDrivers() {
                     } else {
                         timeText = `entre 9h et 18h`;
                     }
-                    
-                    const smsText = `📦 Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeText}.\nVotre livreur: ${currentUser} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
-                    
-                    const encodedSms = encodeURIComponent(smsText);
-                    const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
-                    
-                    smsButton = `
-                        <a href="sms:${phoneNumber}?body=${encodedSms}" 
-                           class="btn-validate" 
-                           style="background:#4CAF50; text-decoration:none; display:inline-block;"
-                           target="_blank">
-                            📱 SMS client
-                        </a>
-                    `;
+                // 生成时间文本
+let timeTextForSms = '';
+if (order.time_req) {
+    if (order.time_req.type === 'fixed') {
+        timeTextForSms = `à ${order.time_req.value}`;
+    } else if (order.time_req.type === 'before') {
+        timeTextForSms = `avant ${order.time_req.value}`;
+    } else if (order.time_req.type === 'range') {
+        timeTextForSms = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
+    } else {
+        timeTextForSms = `entre 9h et 18h`;
+    }
+} else {
+    timeTextForSms = `entre 9h et 18h`;
+}
+
+// 生成三种语言的短信内容
+const frenchSms = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeTextForSms}.\nVotre livreur: ${currentUser} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
+
+const englishSms = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeTextForSms}.\nYour driver: ${currentUser} 📞 ${chauffeurPhone || 'Not available'}\nPlease keep your phone accessible.`;
+
+const chineseSms = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeTextForSms} 配送。\n您的司机: ${currentUser} 📞 ${chauffeurPhone || '暂无电话'}\n请保持电话畅通。`;
+
+// 合并三种语言
+const smsText = `${frenchSms}\n\n---\n\n${englishSms}\n\n---\n\n${chineseSms}`;
+
+const encodedSms = encodeURIComponent(smsText);
+const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
+
+// 检查是否已发送短信（从订单数据中获取）
+const smsSent = order.sms_sent_to_customer || false;
+
+smsButton = `
+    <div class="sms-btn-container">
+        <a href="sms:${phoneNumber}?body=${encodedSms}" 
+           class="btn-validate ${smsSent ? 'sent' : ''}" 
+           style="background:${smsSent ? '#9e9e9e' : '#4CAF50'}; text-decoration:none; display:inline-block;"
+           target="_blank"
+           onclick="${smsSent ? 'return false;' : ''}">
+            📱 SMS client
+            ${smsSent ? '<span class="sms-sent-badge">✅ Envoyé</span>' : ''}
+        </a>
+    </div>
+`;
                 }
             }
             
@@ -3091,19 +3128,18 @@ addOrderBtn.addEventListener('click', async () => {
                 
                 const timeReq = getTimeValue();
                 
-                const orderData = {
-                    customer_name: name,
-                    phone: phone || null,
-                    destination: addr,
-                    driver: driver,
-                    date: currentDate,
-                    time_req: timeReq,
-                    created_by: currentUser,
-                    created_at: new Date().toISOString(),
-                    status: ORDER_STATUS.EN_ATTENTE,
-                    sms_sent_to_customer: false
-                };
-                
+            const orderData = {
+    customer_name: name,
+    phone: phone || null,
+    destination: addr,
+    driver: driver,
+    date: currentDate,
+    time_req: timeReq,
+    created_by: currentUser,
+    created_at: new Date().toISOString(),
+    status: ORDER_STATUS.EN_ATTENTE,
+    sms_sent_to_customer: false  // 添加这行
+};   
                 if (geoResult) {
                     orderData.lat = geoResult.lat;
                     orderData.lon = geoResult.lon;
