@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>LOGISTIC · Connexion</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -22,18 +22,21 @@
             align-items: center;
             padding: 16px;
             position: relative;
-            overflow: hidden;
+            /* 修复：允许滚动 */
+            overflow-y: auto;
+            overflow-x: hidden;
         }
         
-        /* 背景装饰 */
+        /* 背景装饰 - 固定在背景，不随滚动移动 */
         .bg-decoration {
-            position: absolute;
+            position: fixed;
             width: 100%;
             height: 100%;
             top: 0;
             left: 0;
             z-index: 0;
             overflow: hidden;
+            pointer-events: none;
         }
         
         .bg-circle {
@@ -66,6 +69,9 @@
             align-items: center;
             justify-content: center;
             gap: 60px;
+            /* 确保容器可以推动滚动 */
+            margin: auto;
+            padding: 20px 0;
         }
         
         /* 左侧品牌区 */
@@ -426,159 +432,161 @@
             animation: fadeIn 0.5s ease;
         }
         
-        /* 响应式 */
-        @media (max-width: 900px) {
+        /* ===== 手机适配 - 真正可滚动 ===== */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto;  /* 确保可以滚动 */
+                padding: 12px;
+                align-items: flex-start; /* 从顶部开始 */
+                display: block; /* 改为block布局 */
+            }
+            
             .container {
                 flex-direction: column;
-                gap: 30px;
+                gap: 20px;
+                padding: 10px 0 30px 0; /* 底部留更多空间 */
+                margin: 0;
+                min-height: auto; /* 取消最小高度限制 */
             }
             
             .brand-section {
                 max-width: 100%;
                 text-align: center;
+                padding: 10px 0 0;
+                margin-bottom: 0;
             }
             
             .logo {
                 justify-content: center;
+                margin-bottom: 15px;
             }
             
-            .feature-item {
-                justify-content: center;
+            .brand-title {
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+            
+            .brand-title br {
+                display: none;
+            }
+            
+            .brand-desc {
+                font-size: 14px;
+                margin-bottom: 15px;
+            }
+            
+            .brand-desc br {
+                display: none;
+            }
+            
+            .feature-list {
+                display: none; /* 手机上隐藏功能列表，节省空间 */
             }
             
             .login-section {
                 width: 100%;
-                max-width: 400px;
+                max-width: 100%;
+                padding: 25px 20px;
+                margin: 0 0 20px 0; /* 底部留空间 */
+            }
+            
+            .welcome-text {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+            
+            .welcome-sub {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+            
+            .input-field {
+                padding: 14px 16px;
+                font-size: 16px; /* 保持16px避免iOS自动缩放 */
+            }
+            
+            .remember-forgot {
+                margin-bottom: 20px;
+            }
+            
+            /* 应用选择界面 */
+            .app-grid {
+                grid-template-columns: 1fr; /* 单列显示 */
+                gap: 12px;
+            }
+            
+            .app-card {
+                padding: 20px;
+            }
+            
+            .app-icon {
+                font-size: 40px;
+                margin-bottom: 10px;
+            }
+            
+            .app-title {
+                font-size: 18px;
+            }
+            
+            .app-desc {
+                font-size: 12px;
+            }
+            
+            .user-welcome {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .user-avatar-large {
+                width: 60px;
+                height: 60px;
+                font-size: 30px;
+            }
+            
+            .user-name-large {
+                font-size: 20px;
+            }
+            
+            /* 背景装饰固定在背景，不影响滚动 */
+            .bg-decoration {
+                position: fixed;
+            }
+            
+            .bg-circle {
+                filter: blur(40px);
+            }
+            
+            .circle1 {
+                width: 200px;
+                height: 200px;
+                top: -50px;
+                right: -50px;
+            }
+            
+            .circle2 {
+                width: 150px;
+                height: 150px;
+                bottom: -30px;
+                left: -30px;
             }
         }
-        /* 在文件末尾，最后一个 } 之前添加这段代码 */
 
-/* ===== 手机适配 - 只改布局，不改任何功能 ===== */
-@media (max-width: 768px) {
-    body {
-        overflow: auto;
-        padding: 12px;
-        align-items: flex-start;
-    }
-    
-    .container {
-        flex-direction: column;
-        gap: 20px;
-        padding: 0;
-    }
-    
-    .brand-section {
-        max-width: 100%;
-        text-align: center;
-        padding: 20px 0 0;
-    }
-    
-    .logo {
-        justify-content: center;
-        margin-bottom: 15px;
-    }
-    
-    .brand-title {
-        font-size: 28px;
-    }
-    
-    .brand-title br {
-        display: none;
-    }
-    
-    .brand-desc {
-        font-size: 14px;
-        margin-bottom: 15px;
-    }
-    
-    .brand-desc br {
-        display: none;
-    }
-    
-    .feature-list {
-        display: none;
-    }
-    
-    .login-section {
-        width: 100%;
-        padding: 25px 20px;
-        margin-bottom: 20px;
-    }
-    
-    .welcome-text {
-        font-size: 24px;
-        margin-bottom: 5px;
-    }
-    
-    .welcome-sub {
-        font-size: 14px;
-        margin-bottom: 20px;
-    }
-    
-    .input-field {
-        padding: 14px 16px;
-        font-size: 16px;
-    }
-    
-    .remember-forgot {
-        margin-bottom: 20px;
-    }
-    
-    .app-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    
-    .app-card {
-        padding: 20px;
-    }
-    
-    .app-icon {
-        font-size: 40px;
-        margin-bottom: 10px;
-    }
-    
-    .app-title {
-        font-size: 18px;
-    }
-    
-    .app-desc {
-        font-size: 12px;
-    }
-    
-    .user-welcome {
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    
-    .user-avatar-large {
-        width: 60px;
-        height: 60px;
-        font-size: 30px;
-    }
-    
-    .user-name-large {
-        font-size: 20px;
-    }
-    
-    .bg-circle {
-        filter: blur(40px);
-    }
-    
-    .circle1 {
-        width: 200px;
-        height: 200px;
-        top: -50px;
-        right: -50px;
-    }
-    
-    .circle2 {
-        width: 150px;
-        height: 150px;
-        bottom: -30px;
-        left: -30px;
-    }
-}
+        /* 针对更小屏幕的优化 */
+        @media (max-width: 380px) {
+            .login-section {
+                padding: 20px 15px;
+            }
+            
+            .remember-forgot {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .brand-title {
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -730,6 +738,22 @@
                 }
             });
 
+            // 登出
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                window.clearSession();
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('apps').style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('remember').checked = true;
+                document.getElementById('error').textContent = '';
+                
+                // 重置登录按钮
+                const btn = document.getElementById('loginBtn');
+                btn.disabled = false;
+                btn.textContent = 'Se connecter';
+            });
+
             // 显示应用入口
             function showApps(session) {
                 document.getElementById('loginForm').style.display = 'none';
@@ -769,22 +793,6 @@
                 document.getElementById('transportLink').href = `transport.html?session=${encodeURIComponent(JSON.stringify(session))}`;
                 document.getElementById('rhLink').href = `rh.html?session=${encodeURIComponent(JSON.stringify(session))}`;
             }
-
-            // 登出
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                window.clearSession();
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('apps').style.display = 'none';
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-                document.getElementById('remember').checked = true;
-                document.getElementById('error').textContent = '';
-                
-                // 重置登录按钮
-                const btn = document.getElementById('loginBtn');
-                btn.disabled = false;
-                btn.textContent = 'Se connecter';
-            });
         });
     </script>
 </body>
