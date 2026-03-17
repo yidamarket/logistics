@@ -2149,28 +2149,33 @@
                     console.error('loadAdminDrivers异常:', e);
                 }
             }
-
-            async function loadDrivers() {
-                try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('username, phone')
-                        .eq('user_type', USER_TYPES.CHAUFFEUR);
-                    if (data && driverSelect) {
-                        driverSelect.innerHTML = '<option value="">Choisir</option>';
-                        data.forEach(driver => {
-                            const option = document.createElement('option');
-                            option.value = driver.username;
-                            option.textContent = driver.phone ? `${driver.username} (${driver.phone})` : driver.username;
-                            driverSelect.appendChild(option);
-                        });
-                    }
-                } catch (e) {
-                    console.error('loadDrivers异常:', e);
-                }
+async function loadDrivers() {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('username, phone')
+            .eq('user_type', USER_TYPES.CHAUFFEUR);
+        if (data && driverSelect) {
+            // 保存当前司机的电话到全局变量
+            const currentChauffeur = data.find(d => d.username === currentUser);
+            if (currentChauffeur) {
+                window.chauffeurPhone = currentChauffeur.phone;
+                console.log('当前司机电话:', window.chauffeurPhone);
             }
-
-            async function loadDriversIntoSelect(selectElement) {
+            
+            driverSelect.innerHTML = '<option value="">Choisir</option>';
+            data.forEach(driver => {
+                const option = document.createElement('option');
+                option.value = driver.username;
+                option.textContent = driver.phone ? `${driver.username} (${driver.phone})` : driver.username;
+                driverSelect.appendChild(option);
+            });
+        }
+    } catch (e) {
+        console.error('loadDrivers异常:', e);
+    }
+}
+                   async function loadDriversIntoSelect(selectElement) {
                 try {
                     const { data, error } = await supabase
                         .from('users')
@@ -2895,106 +2900,177 @@
                 ordersByDriver.innerHTML = html || '<p>Aucune commande</p>';
             }
 
-            function renderOrderItem(order) {
-                const timeDisplay = formatTimeRequirement(order);
-                const statusLabels = {
-                    'en_attente': 'En attente',
-                    'prepare': 'Préparé',
-                    'en_cours': 'En cours',
-                    'livre': 'Livré'
-                };
-                let actions = '';
-                let smsButton = '';
+    function renderOrderItem(order) {
+    const timeDisplay = formatTimeRequirement(order);
+    const statusLabels = {
+        'en_attente': 'En attente',
+        'prepare': 'Préparé',
+        'en_cours': 'En cours',
+        'livre': 'Livré'
+    };
+    
+    let actions = '';
+    let smsButton = '';
+    
+    // ========== 1. 管理员权限（全部权限） ==========
+    if (isAdmin()) {
+        // EN_ATTENTE 状态：可以准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+        
+        // PREPARE 状态：可以出发
+        if (order.status === ORDER_STATUS.PREPARE) {
+            actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
+        }
+        
+        // EN_COURS 状态：可以送达
+        if (order.status === ORDER_STATUS.EN_COURS) {
+            actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
+        }
+        
+        // 所有状态都可以编辑和删除
+        actions += `
+            <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
+            <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
+        `;
+    }
+    
+    // ========== 2. 经理/秘书权限（原有权限） ==========
+    else if (isManager() || isSecretaire()) {
+        // EN_ATTENTE 状态：可以准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+        
+        // PREPARE 状态：不能出发
+        
+        // EN_COURS 状态：可以送达
+        if (order.status === ORDER_STATUS.EN_COURS) {
+            actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
+        }
+        
+        // 可以编辑和删除
+        actions += `
+            <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
+            <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
+        `;
+    }
+    
+    // ========== 3. 仓库主管权限 ==========
+    else if (isResponsable()) {
+        // 仓库主管可以在 EN_ATTENTE 状态准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+        // 其他状态没有操作按钮，但可以查看签名
+    }
+    
+    // ========== 4. 配货员权限 ==========
+    else if (isPreparateur()) {
+        // 配货员可以在 EN_ATTENTE 状态准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+        // 其他状态没有操作按钮
+    }
+    
+    // ========== 5. 司机权限 ==========
+    else if (isChauffeur()) {
+        // 只能看到自己负责的订单
+        if (order.driver === currentUser) {
+            
+            // 司机不能准备，只能等配货员/主管准备
+            
+            // PREPARE 状态：司机可以出发
+            if (order.status === ORDER_STATUS.PREPARE) {
+                actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
                 
-                if (hasFullAccess()) {
-                    if (order.status === ORDER_STATUS.EN_ATTENTE) {
-                        actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+                // 如果有客户电话，显示短信按钮
+                if (order.phone) {
+                    const chauffeurPhone = window.chauffeurPhone || '';
+                    
+                    // 生成时间文本
+                    let timeText = '';
+                    if (order.time_req) {
+                        if (order.time_req.type === 'fixed') {
+                            timeText = `à ${order.time_req.value}`;
+                        } else if (order.time_req.type === 'before') {
+                            timeText = `avant ${order.time_req.value}`;
+                        } else if (order.time_req.type === 'range') {
+                            timeText = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
+                        } else {
+                            timeText = `entre 9h et 18h`;
+                        }
+                    } else {
+                        timeText = `entre 9h et 18h`;
                     }
-                    if (order.status === ORDER_STATUS.PREPARE) {
-                        actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
-                    }
-                    if (order.status === ORDER_STATUS.EN_COURS) {
-                        actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
-                    }
-                    actions += `
-                        <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
-                        <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
+                    
+                    const smsText = `📦 Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeText}.\nVotre livreur: ${currentUser} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
+                    
+                    const encodedSms = encodeURIComponent(smsText);
+                    const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
+                    
+                    smsButton = `
+                        <a href="sms:${phoneNumber}?body=${encodedSms}" 
+                           class="btn-validate" 
+                           style="background:#4CAF50; text-decoration:none; display:inline-block;"
+                           target="_blank">
+                            📱 SMS client
+                        </a>
                     `;
                 }
-                else if (isPreparateur() && order.status === ORDER_STATUS.EN_ATTENTE) {
-                    actions = `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
-                }
-                else if (isChauffeur() && order.driver === currentUser) {
-                    if (order.status === ORDER_STATUS.PREPARE) {
-                        actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
-                        
-                        // 添加短信按钮（准备出发时）
-                        if (order.phone) {
-                            (async () => {
-                                const { data: chauffeur } = await supabase
-                                    .from('users')
-                                    .select('username, phone')
-                                    .eq('username', currentUser)
-                                    .single();
-                                
-                                const smsText = generateSMSMessage(order, chauffeur?.username || currentUser, chauffeur?.phone || '');
-                                const encodedSms = encodeURIComponent(smsText);
-                                const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
-                                
-                                smsButton = `
-                                    <a href="sms:${phoneNumber}?body=${encodedSms}" 
-                                       class="sms-btn" 
-                                       target="_blank">
-                                        📱 SMS client
-                                    </a>
-                                `;
-                            })();
-                        }
-                    } else if (order.status === ORDER_STATUS.EN_COURS) {
-                        actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
-                    }
-                }
-                
-                if (isChauffeur() && order.status === ORDER_STATUS.LIVRE && order.driver === currentUser) {
-                    const hasPendingOrders = allNonDeliveredOrders && allNonDeliveredOrders.length > 0;
-                    
-                    if (!hasPendingOrders && !actions.includes('Retour dépôt')) {
-                        actions += `<button class="btn-validate" style="background:#2196f3;" onclick="returnToDepot()">🏁 Retour dépôt</button>`;
-                    }
-                }
-                
-                let signatureButton = '';
-                if (order.signature && (hasFullAccess() || isResponsable() || isChauffeur())) {
-                    signatureButton = `<button class="view-signature-btn" onclick="viewSignature('${order.signature}')">📝 Voir signature</button>`;
-                }
-                
-                return `
-                    <div class="order-card ${order.status}">
-                        <div class="item-header">
-                            <span class="customer-name">${escapeHtml(order.customer_name)}</span>
-                            <span class="status-badge ${order.status}">${statusLabels[order.status]}</span>
-                        </div>
-                        <div class="order-details">
-                            <div>📍 ${escapeHtml(order.destination)}</div>
-                            <div>⏰ ${timeDisplay}</div>
-                            ${order.phone ? `<div>📱 ${escapeHtml(order.phone)}</div>` : ''}
-                        </div>
-                        <div class="order-meta">
-                            <span>📅 ${escapeHtml(order.created_by)} ${formatDateTime(order.created_at)}</span>
-                            ${order.prepared_at ? `<span>📦 ${escapeHtml(order.prepared_by)} ${formatDateTime(order.prepared_at)}</span>` : ''}
-                            ${order.driver_departure_at ? `<span>🚚 ${formatDateTime(order.driver_departure_at)}</span>` : ''}
-                            ${order.delivered_at ? `<span>✅ ${formatDateTime(order.delivered_at)}</span>` : ''}
-                        </div>
-                        <div class="order-actions">
-                            ${actions}
-                            ${smsButton}
-                            ${signatureButton}
-                        </div>
-                    </div>
-                `;
             }
-
-            addOrderBtn.addEventListener('click', async () => {
+            
+            // EN_COURS 状态：司机可以送达
+            else if (order.status === ORDER_STATUS.EN_COURS) {
+                actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
+            }
+            
+            // LIVRE 状态：检查是否所有订单都已完成，显示返回按钮
+            else if (order.status === ORDER_STATUS.LIVRE) {
+                const hasPendingOrders = allNonDeliveredOrders && allNonDeliveredOrders.length > 0;
+                
+                // 只在最后一单显示返回按钮
+                if (!hasPendingOrders) {
+                    actions += `<button class="btn-validate" style="background:#2196f3;" onclick="returnToDepot()">🏁 Retour dépôt</button>`;
+                }
+            }
+        }
+    }
+    
+    // ========== 6. 签名查看按钮（对多种角色开放） ==========
+    let signatureButton = '';
+    if (order.signature && (isAdmin() || isManager() || isSecretaire() || isResponsable() || isChauffeur())) {
+        signatureButton = `<button class="view-signature-btn" onclick="viewSignature('${order.signature}')">📝 Voir signature</button>`;
+    }
+    
+    return `
+        <div class="order-card ${order.status}">
+            <div class="item-header">
+                <span class="customer-name">${escapeHtml(order.customer_name)}</span>
+                <span class="status-badge ${order.status}">${statusLabels[order.status]}</span>
+            </div>
+            <div class="order-details">
+                <div>📍 ${escapeHtml(order.destination)}</div>
+                <div>⏰ ${timeDisplay}</div>
+                ${order.phone ? `<div>📱 ${escapeHtml(order.phone)}</div>` : ''}
+            </div>
+            <div class="order-meta">
+                <span>📅 ${escapeHtml(order.created_by)} ${formatDateTime(order.created_at)}</span>
+                ${order.prepared_at ? `<span>📦 ${escapeHtml(order.prepared_by)} ${formatDateTime(order.prepared_at)}</span>` : ''}
+                ${order.driver_departure_at ? `<span>🚚 ${formatDateTime(order.driver_departure_at)}</span>` : ''}
+                ${order.delivered_at ? `<span>✅ ${formatDateTime(order.delivered_at)}</span>` : ''}
+            </div>
+            <div class="order-actions">
+                ${actions}
+                ${smsButton}
+                ${signatureButton}
+            </div>
+        </div>
+    `;
+}
+addOrderBtn.addEventListener('click', async () => {
                 if (!hasFullAccess()) return;
                 
                 const name = customerName.value.trim();
