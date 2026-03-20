@@ -43,7 +43,37 @@
             margin-bottom: 20px;
             gap: 15px;
         }
-        
+        /* 强制表格固定布局 */
+.team-calendar {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+        /* 第一列（员工姓名）固定宽度 */
+        .team-calendar th:first-child,
+        .team-calendar td:first-child {
+            width: 150px;
+            min-width: 150px;
+            max-width: 150px;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+
+        /* 其他日期列平分剩余宽度 */
+        .team-calendar th:not(:first-child),
+        .team-calendar td:not(:first-child) {
+            width: calc((100% - 150px) / var(--days-count, 30));
+            min-width: 50px;
+        }
+
+        /* 表头样式微调 */
+        .team-calendar th {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+}
         .back-home {
             background: #27ae60;
             color: white;
@@ -64,19 +94,93 @@
         }
         
         .user-info-bar {
-            background: #d4e3fd;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
             border-radius: 40px;
-            padding: 12px 20px;
+            padding: 12px 24px;
             flex: 1;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .datetime-weather {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .datetime {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .date-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+        }
+        
+        .time-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+        }
+        
+        .weather-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .weather-icon {
+            font-size: 1.2rem;
+        }
+        
+        .weather-temp {
+            font-weight: 600;
+        }
+        
+        .weather-city {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .user-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-name-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+        
+        .user-type-badge {
+            background: #27ae60;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 600;
         }
         
         .logout-btn {
-            background: #e05a5a;
+            background: #e74c3c;
             color: white;
             border: none;
             padding: 8px 20px;
@@ -84,6 +188,7 @@
             cursor: pointer;
             font-size: 0.95rem;
             transition: background 0.3s;
+            font-weight: 600;
         }
         
         .logout-btn:hover {
@@ -164,6 +269,7 @@
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 15px;
+            position: relative;
         }
         
         .balance-header {
@@ -192,6 +298,29 @@
         .balance-label {
             font-size: 0.8rem;
             opacity: 0.9;
+        }
+        
+        .edit-balance-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .edit-balance-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
         }
         
         /* Leave Request Cards */
@@ -376,48 +505,73 @@
             font-size: 0.9rem;
         }
         
-        /* Attendance */
-        .attendance-card {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+        .btn-save-small {
+            background: #27ae60;
             color: white;
-            border-radius: 30px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .attendance-btn {
-            background: white;
-            color: #2980b9;
             border: none;
-            padding: 20px 40px;
-            border-radius: 60px;
-            font-size: 1.5rem;
-            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 30px;
             cursor: pointer;
-            width: 100%;
-            margin-bottom: 15px;
-            transition: all 0.3s;
+            font-size: 0.9rem;
+            margin-left: 10px;
         }
         
-        .attendance-btn.checked-in {
-            background: #e74c3c;
+        .btn-cancel-small {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+        
+        /* Attendance History */
+        .attendance-history {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: #f0f2f5;
+            border-radius: 30px;
+            margin-bottom: 8px;
+        }
+        
+        .history-time {
+            font-size: 1rem;
+            font-weight: 600;
+            min-width: 100px;
+            color: #1d4a72;
+        }
+        
+        .history-type {
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
             color: white;
         }
         
-        .attendance-btn:hover {
-            transform: scale(1.02);
+        .history-type.check_in {
+            background: #27ae60;
         }
         
-        .attendance-btn:disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            transform: none;
+        .history-type.check_out {
+            background: #e74c3c;
         }
         
-        .attendance-time {
-            font-size: 1.1rem;
-            opacity: 0.9;
+        .history-type.break_start {
+            background: #f39c12;
+        }
+        
+        .history-type.break_end {
+            background: #3498db;
         }
         
         /* Team Calendar */
@@ -433,27 +587,26 @@
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            min-width: 800px;
         }
         
         .team-calendar th {
             background: #2f6d9e;
             color: white;
-            padding: 12px;
+            padding: 12px 8px;
             text-align: center;
             font-weight: 600;
             position: sticky;
             top: 0;
+            font-size: 0.9rem;
+            min-width: 60px;
         }
         
         .team-calendar td {
             border: 1px solid #e0e0e0;
-            padding: 8px;
+            padding: 8px 4px;
             text-align: center;
-            min-width: 100px;
-        }
-        
-        .user-row {
-            background: #f8f9fc;
+            min-width: 60px;
         }
         
         .user-name-cell {
@@ -462,51 +615,75 @@
             background: #e8f0fe;
             position: sticky;
             left: 0;
+            min-width: 120px;
+            text-align: left;
+            padding-left: 12px;
         }
         
         .status-working {
             background: #c8e6c9;
             color: #1b5e20;
-            padding: 4px 8px;
+            padding: 4px 0;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
+            display: block;
+            width: 100%;
+        }
+        
+        .status-absent {
+            background: #ffcdd2;
+            color: #b71c1c;
+            padding: 4px 0;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: block;
+            width: 100%;
         }
         
         .status-leave {
             background: #fff3e0;
             color: #e65100;
-            padding: 4px 8px;
+            padding: 4px 0;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
+            display: block;
+            width: 100%;
         }
         
         .status-holiday {
             background: #e1bee7;
             color: #4a148c;
-            padding: 4px 8px;
+            padding: 4px 0;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
+            display: block;
+            width: 100%;
         }
         
         .status-overtime {
             background: #d1c4e9;
             color: #311b92;
-            padding: 4px 8px;
+            padding: 4px 0;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
+            display: block;
+            width: 100%;
         }
         
         .status-weekend {
             background: #f5f5f5;
             color: #9e9e9e;
-            padding: 4px 8px;
+            padding: 4px 0;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-style: italic;
+            display: block;
+            width: 100%;
         }
         
         /* Month selector */
@@ -567,6 +744,13 @@
             height: 16px;
             border-radius: 4px;
         }
+        
+        .legend-color.working { background: #c8e6c9; }
+        .legend-color.absent { background: #ffcdd2; }
+        .legend-color.leave { background: #fff3e0; }
+        .legend-color.holiday { background: #e1bee7; }
+        .legend-color.overtime { background: #d1c4e9; }
+        .legend-color.weekend { background: #f5f5f5; }
         
         /* Loading */
         .loading {
@@ -936,6 +1120,188 @@
                 opacity: 0;
             }
         }
+        
+        /* 统计卡片 */
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-summary-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        
+        .stat-summary-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #27ae60;
+            margin-bottom: 5px;
+        }
+        
+        .stat-summary-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* 时间轴样式 - 显示完整打卡记录 */
+        .timeline-container {
+            background: white;
+            border-radius: 30px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+        
+        .timeline-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1d4a72;
+        }
+        
+        .timeline-date {
+            background: #27ae60;
+            color: white;
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .date-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .date-nav-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .date-nav-btn:hover {
+            background: #2980b9;
+            transform: scale(1.1);
+        }
+        
+        .current-date-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1d4a72;
+            background: #f0f2f5;
+            padding: 8px 20px;
+            border-radius: 40px;
+        }
+        
+        .timeline-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8fafd;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        
+        .timeline-row:hover {
+            background: #edf2f9;
+            transform: translateX(5px);
+        }
+        
+        .timeline-user-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .timeline-user-info {
+            flex: 1;
+        }
+        
+        .timeline-user-name {
+            font-weight: 600;
+            color: #1d4a72;
+            margin-bottom: 4px;
+        }
+        
+        .timeline-user-type {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .timeline-records {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 250px;
+        }
+        
+        .timeline-record {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+        }
+        
+        .timeline-record.check_in {
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+        
+        .timeline-record.check_out {
+            background: #ffebee;
+            color: #b71c1c;
+        }
+        
+        .timeline-record.break_start {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .timeline-record.break_end {
+            background: #e3f2fd;
+            color: #0d47a1;
+        }
     </style>
 </head>
 <body>
@@ -946,9 +1312,22 @@
                 <span>🏠</span> Accueil
             </button>
             <div class="user-info-bar">
-                <span id="currentUserDisplay">👤 </span>
-                <span id="userTypeDisplay"></span>
-                <button class="logout-btn" id="logoutBtn">Déconnexion</button>
+                <div class="datetime-weather">
+                    <div class="datetime">
+                        <div class="date-box" id="currentDate"></div>
+                        <div class="time-box" id="currentTime"></div>
+                    </div>
+                    <div class="weather-box" id="weatherDisplay">
+                        <span class="weather-icon">⏳</span>
+                        <span class="weather-temp">--°C</span>
+                        <span class="weather-city">Vitry</span>
+                    </div>
+                </div>
+                <div class="user-details">
+                    <span class="user-name-badge" id="currentUserDisplay">👤 </span>
+                    <span class="user-type-badge" id="userTypeDisplay"></span>
+                    <button class="logout-btn" id="logoutBtn">Déconnexion</button>
+                </div>
             </div>
         </div>
 
@@ -959,6 +1338,7 @@
             <button class="tab-btn" data-tab="team-calendar" id="calendarTab">📆 Équipe</button>
             <button class="tab-btn" data-tab="team-leaves" id="teamTab">📋 Demandes</button>
             <button class="tab-btn" data-tab="balances" id="balancesTab">⚖️ Soldes</button>
+            <button class="tab-btn" data-tab="attendance-stats" id="attendanceStatsTab">📊 Présences</button>
         </div>
 
         <!-- Tab: Mes congés -->
@@ -1007,7 +1387,7 @@
                     <button class="btn-primary" id="submitLeaveBtn">Soumettre la demande</button>
                 </div>
                 
-                <!-- Solde -->
+                <!-- Solde et Pointage -->
                 <div>
                     <div class="section-card">
                         <div class="section-title">
@@ -1017,15 +1397,16 @@
                         <div id="myBalance"></div>
                     </div>
                     
-                    <div class="attendance-card">
-                        <div class="section-title" style="color: white; margin-bottom: 20px;">
+                    <!-- Pointage - sans bouton, uniquement l'historique -->
+                  <!-- Pointage - sans bouton, uniquement l'historique -->
+                    <div class="section-card" id="myAttendanceCard">
+                        <div class="section-title">
                             <span>⏰</span>
-                            Pointage
+                            Mon pointage aujourd'hui
                         </div>
-                        <button class="attendance-btn" id="attendanceBtn">
-                            🔴 Pointer
-                        </button>
-                        <div class="attendance-time" id="attendanceTime"></div>
+                        <div class="attendance-history" id="attendanceHistory">
+                            <div class="history-item">Chargement...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1107,26 +1488,12 @@
                 
                 <!-- Légende -->
                 <div class="legend">
-                    <div class="legend-item">
-                        <span class="legend-color working"></span>
-                        <span>Au travail</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color leave"></span>
-                        <span>En congé</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color holiday"></span>
-                        <span>Jour férié</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color overtime"></span>
-                        <span>Heure sup</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color weekend"></span>
-                        <span>Weekend</span>
-                    </div>
+                    <div class="legend-item"><span class="legend-color working"></span>Présent</div>
+                    <div class="legend-item"><span class="legend-color absent"></span>Absent</div>
+                    <div class="legend-item"><span class="legend-color leave"></span>Congé</div>
+                    <div class="legend-item"><span class="legend-color holiday"></span>Férié</div>
+                    <div class="legend-item"><span class="legend-color overtime"></span>Heure sup</div>
+                    <div class="legend-item"><span class="legend-color weekend"></span>Weekend</div>
                 </div>
             </div>
         </div>
@@ -1160,9 +1527,37 @@
                 <div id="allBalances"></div>
             </div>
         </div>
+
+        <!-- Tab: Présences avec navigation par date -->
+        <div id="tab-attendance-stats" class="tab-content">
+            <div class="section-card">
+                <div class="section-title">
+                    <span>📊</span>
+                    Présences
+                </div>
+                
+                <!-- Navigation par date -->
+                <div class="date-navigation">
+                    <button class="date-nav-btn" onclick="changeAttendanceDate(-1)">◀</button>
+                    <span class="current-date-display" id="currentAttendanceDate"></span>
+                    <button class="date-nav-btn" onclick="changeAttendanceDate(1)">▶</button>
+                </div>
+                
+                <div class="timeline-container">
+                    <div class="timeline-header">
+                        <div class="timeline-title">👥 État des présences</div>
+                        <div class="timeline-date" id="selectedDateDisplay"></div>
+                    </div>
+                    
+                    <div class="timeline-grid" id="attendanceTimeline">
+                        <div class="loading">Chargement des présences...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 自定义弹窗容器 -->
+    <!-- Modal container -->
     <div id="customModal" class="custom-modal" style="display: none;">
         <div class="custom-modal-content">
             <div class="custom-modal-header">
@@ -1179,42 +1574,21 @@
     </div>
 
     <script>
-        // ==================== Configuration ====================
-       
-
+        // ==================== CONFIGURATION ====================
+        // ==================== CONFIGURATION ====================
         const USER_TYPES = {
             ADMIN: 'admin',
             MANAGER: 'manager',
             SECRETAIRE: 'secretaire',
             PREPARATEUR: 'preparateur',
-            CHAUFFEUR: 'chauffeur',
-            RESPONSABLE: 'responsable'
+            CHAUFFEUR: 'chauffeur'
         };
 
-        // ==================== Session Management ====================
-        function getSessionFromUrl() {
-            const params = new URLSearchParams(window.location.search);
-            const sessionData = params.get('session');
-            if (sessionData) {
-                try {
-                    return JSON.parse(decodeURIComponent(sessionData));
-                } catch (e) {
-                    console.error('Erreur parsing session:', e);
-                }
-            }
-            return null;
-        }
-
-        function loadSession() {
-            const data = localStorage.getItem('session') || sessionStorage.getItem('session');
-            return data ? JSON.parse(data) : null;
-        }
-
-        const urlSession = getSessionFromUrl();
-        const storageSession = loadSession();
-        const session = urlSession || storageSession;
-
+        // ==================== SESSION ====================
+        // 使用 config.js 里定义好的 loadSession（它会自动从 localStorage 和 sessionStorage 读取）
+        const session = window.loadSession ? window.loadSession() : null;
         if (!session) {
+            // 如果依然没有 session，跳回登录页
             window.location.href = 'index.html';
         }
 
@@ -1222,23 +1596,50 @@
         const currentUserId = session.id;
         const currentUserType = session.userType;
 
+
         const typeLabels = {
             'admin': 'Administrateur',
             'manager': 'Manager',
             'secretaire': 'Secrétaire',
             'preparateur': 'Préparateur',
-            'chauffeur': 'Chauffeur',
-            'responsable': 'Responsable'
+            'chauffeur': 'Chauffeur'
         };
         
         document.getElementById('currentUserDisplay').innerHTML = `👤 ${currentUser}`;
-        document.getElementById('userTypeDisplay').innerHTML = `(${typeLabels[currentUserType] || currentUserType})`;
+        document.getElementById('userTypeDisplay').innerHTML = typeLabels[currentUserType] || currentUserType;
 
+        // ==================== DATES ====================
         let currentCalendarDate = new Date();
+        let currentAttendanceDate = new Date();
 
-        // ==================== Permissions ====================
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('fr-FR', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('fr-FR', { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit' 
+            });
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // ==================== WEATHER ====================
+        function fetchWeather() {
+            setTimeout(() => {
+                document.getElementById('weatherDisplay').innerHTML = `
+                    <span class="weather-icon">☀️</span>
+                    <span class="weather-temp">18°C</span>
+                    <span class="weather-city">Vitry</span>
+                `;
+            }, 1000);
+        }
+        fetchWeather();
+
+        // ==================== PERMISSIONS ====================
         const isManager = currentUserType === USER_TYPES.MANAGER || currentUserType === USER_TYPES.ADMIN;
-        const canSeeCalendar = isManager || currentUserType === USER_TYPES.SECRETAIRE;
+        const isSecretaire = currentUserType === USER_TYPES.SECRETAIRE;
+        const canSeeCalendar = isManager || isSecretaire;
 
         if (isManager) {
             document.getElementById('myLeavesTab').style.display = 'none';
@@ -1247,19 +1648,41 @@
 
         if (!canSeeCalendar) {
             document.getElementById('calendarTab').style.display = 'none';
+            document.getElementById('attendanceStatsTab').style.display = 'none';
         }
+        
         if (!isManager) {
             document.getElementById('teamTab').style.display = 'none';
             document.getElementById('balancesTab').style.display = 'none';
         }
 
-        // ==================== Logout ====================
+        // ==================== LOGOUT ====================
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            clearSession();
+            sessionStorage.removeItem('session');
             window.location.href = 'index.html';
         });
 
-        // ==================== 自定义弹窗 ====================
+        // ==================== TABS ====================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                const tabId = btn.dataset.tab;
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+                
+                if (tabId === 'attendance-stats') {
+                    updateAttendanceDateDisplay();
+                    loadAttendanceTimeline(currentAttendanceDate);
+                }
+            });
+        });
+
+        // ==================== MODAL ====================
         const customModal = document.getElementById('customModal');
         const modalIcon = document.getElementById('modalIcon');
         const modalTitle = document.getElementById('modalTitle');
@@ -1268,37 +1691,18 @@
         const modalInputLabel = document.getElementById('modalInputLabel');
         const modalInput = document.getElementById('modalInput');
         const modalActions = document.getElementById('modalActions');
-        
-        let modalResolve = null;
 
         function showModal(options) {
             return new Promise((resolve) => {
-                modalResolve = resolve;
-                
-                // 设置图标
-                const icons = {
-                    'success': '✅',
-                    'warning': '⚠️',
-                    'error': '❌',
-                    'info': 'ℹ️',
-                    'question': '❓'
-                };
+                const icons = { success: '✅', warning: '⚠️', error: '❌', info: 'ℹ️', question: '❓' };
                 modalIcon.textContent = icons[options.icon] || 'ℹ️';
                 
-                // 设置颜色
-                const iconColors = {
-                    'success': 'success',
-                    'warning': 'warning',
-                    'error': 'error',
-                    'info': 'info',
-                    'question': 'info'
-                };
+                const iconColors = { success: 'success', warning: 'warning', error: 'error', info: 'info', question: 'info' };
                 modalIcon.className = `custom-modal-icon ${iconColors[options.icon] || 'info'}`;
                 
                 modalTitle.textContent = options.title || '';
                 modalMessage.textContent = options.message || '';
                 
-                // 处理输入框
                 if (options.input) {
                     modalInputContainer.style.display = 'block';
                     modalInputLabel.textContent = options.inputLabel || '';
@@ -1308,7 +1712,6 @@
                     modalInputContainer.style.display = 'none';
                 }
                 
-                // 创建按钮
                 modalActions.innerHTML = '';
                 options.buttons.forEach(btn => {
                     const button = document.createElement('button');
@@ -1329,34 +1732,20 @@
             });
         }
 
-        // 自定义提示
         function showToast(message, type = 'success', duration = 3000) {
             const toast = document.createElement('div');
             toast.className = `custom-toast ${type}`;
-            
-            const icons = {
-                'success': '✅',
-                'error': '❌',
-                'info': 'ℹ️',
-                'warning': '⚠️'
-            };
-            
-            toast.innerHTML = `
-                <span style="font-size: 1.2rem;">${icons[type]}</span>
-                <span>${message}</span>
-            `;
-            
+            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            toast.innerHTML = `<span style="font-size: 1.2rem;">${icons[type]}</span><span>${message}</span>`;
             document.body.appendChild(toast);
-            
             setTimeout(() => {
                 toast.style.animation = 'slideOutRight 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
             }, duration);
         }
 
-        // 替换原来的 showConfirm
         async function showConfirm(title, message) {
-            const result = await showModal({
+            return await showModal({
                 icon: 'question',
                 title: title,
                 message: message,
@@ -1365,10 +1754,8 @@
                     { text: 'Non', type: 'cancel', value: false }
                 ]
             });
-            return result;
         }
 
-        // 替换原来的 prompt
         async function showPrompt(title, message, defaultValue = '') {
             const result = await showModal({
                 icon: 'info',
@@ -1383,41 +1770,51 @@
                     { text: 'Annuler', type: 'cancel', value: 'cancel' }
                 ]
             });
-            
-            if (result === 'cancel') return null;
-            return result.input;
+            return result === 'cancel' ? null : result.input;
         }
 
-        // 替换原来的 alert
         function showAlert(message, type = 'success') {
             showToast(message, type);
         }
 
-        // ==================== Initialisation ====================
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadLeaveTypes();
-            await checkAndAddMonthlyLeave();
-            
-            if (!isManager) {
-                await loadMyBalance();
-                await loadMyLeaveRequests();
-                await loadMyOvertimeRequests();
-            }
-            
-            await loadAttendance();
-            
-            if (canSeeCalendar) {
-                await loadTeamCalendar();
-            }
-            
-            if (isManager) {
-                await loadPendingLeaveRequests();
-                await loadPendingOvertimeRequests();
-                await loadAllBalances();
-            }
-        });
+        // ==================== INIT ====================
+    // ==================== INIT ====================
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    // 如果是管理员或经理，隐藏“Mon pointage aujourd'hui”卡片
+    if (isManager) {
+        const myAttendanceCard = document.getElementById('myAttendanceCard');
+        if (myAttendanceCard) {
+            myAttendanceCard.style.display = 'none';
+        }
+    }
 
-        // ==================== Load Leave Types ====================
+    await loadLeaveTypes();
+    await checkAndAddMonthlyLeave();
+    
+    if (!isManager) {
+        await loadMyBalance();
+        await loadMyLeaveRequests();
+        await loadMyOvertimeRequests();
+        await loadMyAttendance();
+    }
+    
+    if (canSeeCalendar) {
+        await loadTeamCalendar();
+    }
+    
+    if (isManager) {
+        await loadPendingLeaveRequests();
+        await loadPendingOvertimeRequests();
+        await loadAllBalances();
+    }
+    
+    updateAttendanceDateDisplay();
+    if (document.getElementById('tab-attendance-stats').classList.contains('active')) {
+        await loadAttendanceTimeline(currentAttendanceDate);
+    }
+});
+        // ==================== LEAVE TYPES ====================
         async function loadLeaveTypes() {
             const { data, error } = await supabase
                 .from('leave_types')
@@ -1444,7 +1841,7 @@
             }
         }
 
-        // ==================== Calcul jours ouvrés ====================
+        // ==================== WORKING DAYS ====================
         async function calculateWorkingDays(start, end) {
             const startDate = new Date(start);
             const endDate = new Date(end);
@@ -1485,7 +1882,7 @@
             }
         }
 
-        // ==================== Mois automatique ====================
+        // ==================== MONTHLY LEAVE ====================
         async function checkAndAddMonthlyLeave() {
             const today = new Date();
             const firstDay = today.getDate() === 1;
@@ -1505,128 +1902,116 @@
             showAlert('2.5 jours de congés ajoutés à tous', 'success');
         }
 
-        // ==================== Soumettre demande congé ====================
-      // ==================== Soumettre demande congé ====================
-document.getElementById('submitLeaveBtn').addEventListener('click', async () => {
-    const leaveTypeId = parseInt(document.getElementById('leaveType').value);
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const daysCount = parseFloat(document.getElementById('daysCount').value);
-    const reason = document.getElementById('reason').value;
-    const proofUrl = document.getElementById('proofUrl')?.value || null;
-    
-    if (!leaveTypeId || !startDate || !endDate || !daysCount) {
-        showAlert('Veuillez remplir tous les champs', 'error');
-        return;
-    }
-    
-    // 检查日期是否有效
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    
-    const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
-    
-    // 不能请昨天的假
-    if (start < today) {
-        showAlert('Vous ne pouvez pas faire une demande pour une date passée', 'error');
-        return;
-    }
-    
-    // 结束日期不能早于开始日期
-    if (end < start) {
-        showAlert('La date de fin doit être après la date de début', 'error');
-        return;
-    }
-    
-    // 检查是否重复请假
-    const { data: existingRequests, error: checkError } = await supabase
-        .from('leave_requests')
-        .select('*')
-        .eq('user_id', currentUserId)
-        .in('status', ['en_attente', 'approuve'])
-        .or(`start_date.lte.${endDate},end_date.gte.${startDate}`);
-    
-    if (existingRequests && existingRequests.length > 0) {
-        showAlert('Vous avez déjà une demande pour cette période', 'error');
-        return;
-    }
-    
-    // 获取假期类型信息
-    const { data: leaveType } = await supabase
-        .from('leave_types')
-        .select('name')
-        .eq('id', leaveTypeId)
-        .single();
-    
-    // 如果是年假，检查余额
-    if (leaveType?.name === 'conges_payes') {
-        const { data: user } = await supabase
-            .from('users')
-            .select('conges_payes')
-            .eq('id', currentUserId)
-            .single();
-        
-        if (daysCount > user.conges_payes) {
-            const confirm = await showConfirm(
-                'Solde insuffisant',
-                `Il vous reste ${user.conges_payes} jours. Voulez-vous quand même faire la demande ?`
-            );
-            if (!confirm) return;
-        }
-    }
-    
-    // 创建请假申请
-    const { error } = await supabase
-        .from('leave_requests')
-        .insert([{
-            user_id: currentUserId,
-            leave_type_id: leaveTypeId,
-            start_date: startDate,
-            end_date: endDate,
-            days_count: daysCount,
-            reason: reason,
-            proof_url: proofUrl,
-            status: 'en_attente'
-        }]);
-        
-    if (!error) {
-        showAlert('Demande soumise avec succès', 'success');
-        
-        // 如果是年假，更新余额
-        if (leaveType?.name === 'conges_payes') {
-            const { data: user } = await supabase
-                .from('users')
-                .select('conges_payes')
-                .eq('id', currentUserId)
+        // ==================== SUBMIT LEAVE ====================
+        document.getElementById('submitLeaveBtn').addEventListener('click', async () => {
+            const leaveTypeId = parseInt(document.getElementById('leaveType').value);
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const daysCount = parseFloat(document.getElementById('daysCount').value);
+            const reason = document.getElementById('reason').value;
+            const proofUrl = document.getElementById('proofUrl')?.value || null;
+            
+            if (!leaveTypeId || !startDate || !endDate || !daysCount) {
+                showAlert('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            
+            const end = new Date(endDate);
+            end.setHours(0, 0, 0, 0);
+            
+            if (start < today) {
+                showAlert('Vous ne pouvez pas faire une demande pour une date passée', 'error');
+                return;
+            }
+            
+            if (end < start) {
+                showAlert('La date de fin doit être après la date de début', 'error');
+                return;
+            }
+            
+            const { data: existingRequests } = await supabase
+                .from('leave_requests')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .in('status', ['en_attente', 'approuve'])
+                .or(`start_date.lte.${endDate},end_date.gte.${startDate}`);
+            
+            if (existingRequests && existingRequests.length > 0) {
+                showAlert('Vous avez déjà une demande pour cette période', 'error');
+                return;
+            }
+            
+            const { data: leaveType } = await supabase
+                .from('leave_types')
+                .select('name')
+                .eq('id', leaveTypeId)
                 .single();
             
-            await supabase
-                .from('users')
-                .update({ 
-                    conges_payes: user.conges_payes - daysCount 
-                })
-                .eq('id', currentUserId);
-        }
-        
-        // Reset form
-        document.getElementById('leaveType').value = '';
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
-        document.getElementById('reason').value = '';
-        document.getElementById('daysCount').value = '0';
-        document.getElementById('proofField').style.display = 'none';
-        
-        await loadMyLeaveRequests();
-        await loadMyBalance();
-        if (canSeeCalendar) await loadTeamCalendar();
-    }
-});
-      
-        // ==================== Vérifier jour férié ====================
+            if (leaveType?.name === 'conges_payes') {
+                const { data: user } = await supabase
+                    .from('users')
+                    .select('conges_payes')
+                    .eq('id', currentUserId)
+                    .single();
+                
+                if (daysCount > user.conges_payes) {
+                    const confirm = await showConfirm(
+                        'Solde insuffisant',
+                        `Il vous reste ${user.conges_payes} jours. Voulez-vous quand même faire la demande ?`
+                    );
+                    if (!confirm) return;
+                }
+            }
+            
+            const { error } = await supabase
+                .from('leave_requests')
+                .insert([{
+                    user_id: currentUserId,
+                    leave_type_id: leaveTypeId,
+                    start_date: startDate,
+                    end_date: endDate,
+                    days_count: daysCount,
+                    reason: reason,
+                    proof_url: proofUrl,
+                    status: 'en_attente'
+                }]);
+                
+            if (!error) {
+                showAlert('Demande soumise avec succès', 'success');
+                
+                if (leaveType?.name === 'conges_payes') {
+                    const { data: user } = await supabase
+                        .from('users')
+                        .select('conges_payes')
+                        .eq('id', currentUserId)
+                        .single();
+                    
+                    await supabase
+                        .from('users')
+                        .update({ conges_payes: user.conges_payes - daysCount })
+                        .eq('id', currentUserId);
+                }
+                
+                document.getElementById('leaveType').value = '';
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                document.getElementById('reason').value = '';
+                document.getElementById('daysCount').value = '0';
+                document.getElementById('proofField').style.display = 'none';
+                
+                await loadMyLeaveRequests();
+                await loadMyBalance();
+                if (canSeeCalendar) await loadTeamCalendar();
+            }
+        });
+
+        // ==================== CHECK HOLIDAY ====================
         window.checkIfHoliday = async function() {
             const dateStr = document.getElementById('overtimeDate').value;
             if (!dateStr) return;
@@ -1649,11 +2034,10 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                 warning.style.display = 'block';
             } else {
                 warning.style.display = 'none';
-                showAlert('Cette date n\'est pas un jour férié ou weekend', 'info');
             }
         };
 
-        // ==================== Soumettre heure sup ====================
+        // ==================== SUBMIT OVERTIME ====================
         document.getElementById('submitOvertimeBtn').addEventListener('click', async () => {
             const workDate = document.getElementById('overtimeDate').value;
             const reason = document.getElementById('overtimeReason').value;
@@ -1683,7 +2067,7 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             }
         });
 
-        // ==================== Mon solde ====================
+        // ==================== MY BALANCE ====================
         async function loadMyBalance() {
             const { data: user, error } = await supabase
                 .from('users')
@@ -1694,36 +2078,29 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             if (error) return;
             
             const container = document.getElementById('myBalance');
-            
-            const card = document.createElement('div');
-            card.className = 'balance-card';
-            card.innerHTML = `
-                <div class="balance-header">
-                    <span>Congés payés</span>
-                    <span>${new Date().getFullYear()}</span>
-                </div>
-                <div class="balance-numbers">
-                    <div class="balance-item">
-                        <div class="balance-value">${user.conges_payes}</div>
-                        <div class="balance-label">Jours restants</div>
+            container.innerHTML = `
+                <div class="balance-card">
+                    <div class="balance-header">
+                        <span>Congés payés</span>
+                        <span>${new Date().getFullYear()}</span>
+                    </div>
+                    <div class="balance-numbers">
+                        <div class="balance-item">
+                            <div class="balance-value">${user.conges_payes}</div>
+                            <div class="balance-label">Jours restants</div>
+                        </div>
                     </div>
                 </div>
             `;
-            
-            container.innerHTML = '';
-            container.appendChild(card);
         }
 
-        // ==================== Mes demandes de congé ====================
+        // ==================== MY LEAVE REQUESTS ====================
         async function loadMyLeaveRequests() {
             const { data, error } = await supabase
                 .from('leave_requests')
                 .select(`
                     *,
-                    leave_type:leave_types!leave_type_id (
-                        name_fr,
-                        color
-                    )
+                    leave_type:leave_types!leave_type_id (name_fr, color)
                 `)
                 .eq('user_id', currentUserId)
                 .order('created_at', { ascending: false });
@@ -1739,19 +2116,8 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             }
             
             data.forEach(request => {
-                const statusLabels = {
-                    'en_attente': 'En attente',
-                    'approuve': 'Approuvé',
-                    'refuse': 'Refusé',
-                    'annule': 'Annulé'
-                };
-                
-                const statusColors = {
-                    'en_attente': '#f39c12',
-                    'approuve': '#27ae60',
-                    'refuse': '#e74c3c',
-                    'annule': '#95a5a6'
-                };
+                const statusLabels = { en_attente: 'En attente', approuve: 'Approuvé', refuse: 'Refusé', annule: 'Annulé' };
+                const statusColors = { en_attente: '#f39c12', approuve: '#27ae60', refuse: '#e74c3c', annule: '#95a5a6' };
                 
                 const card = document.createElement('div');
                 card.className = 'leave-request-card';
@@ -1759,11 +2125,7 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                 
                 let actions = '';
                 if (request.status === 'en_attente') {
-                    actions = `
-                        <div class="request-actions">
-                            <button class="btn-cancel" onclick="cancelLeaveRequest(${request.id})">🗑️ Annuler</button>
-                        </div>
-                    `;
+                    actions = `<div class="request-actions"><button class="btn-cancel" onclick="cancelLeaveRequest(${request.id})">🗑️ Annuler</button></div>`;
                 }
                 
                 card.innerHTML = `
@@ -1775,7 +2137,6 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                         📅 Du ${new Date(request.start_date).toLocaleDateString('fr-FR')} au ${new Date(request.end_date).toLocaleDateString('fr-FR')} (${request.days_count} jours)
                     </div>
                     ${request.reason ? `<div class="request-reason">💬 ${request.reason}</div>` : ''}
-                    ${request.approver_id ? '<div style="font-size:0.9rem; color:#666;">✅ Approuvé</div>' : ''}
                     ${actions}
                 `;
                 
@@ -1783,7 +2144,7 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             });
         }
 
-        // ==================== Mes heures sup ====================
+        // ==================== MY OVERTIME REQUESTS ====================
         async function loadMyOvertimeRequests() {
             const { data, error } = await supabase
                 .from('overtime_requests')
@@ -1802,17 +2163,8 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             }
             
             data.forEach(request => {
-                const statusLabels = {
-                    'en_attente': 'En attente',
-                    'approuve': 'Approuvé',
-                    'refuse': 'Refusé'
-                };
-                
-                const statusColors = {
-                    'en_attente': '#f39c12',
-                    'approuve': '#27ae60',
-                    'refuse': '#e74c3c'
-                };
+                const statusLabels = { en_attente: 'En attente', approuve: 'Approuvé', refuse: 'Refusé' };
+                const statusColors = { en_attente: '#f39c12', approuve: '#27ae60', refuse: '#e74c3c' };
                 
                 const card = document.createElement('div');
                 card.className = 'leave-request-card';
@@ -1820,11 +2172,7 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                 
                 let actions = '';
                 if (request.status === 'en_attente') {
-                    actions = `
-                        <div class="request-actions">
-                            <button class="btn-cancel" onclick="cancelOvertimeRequest(${request.id})">🗑️ Annuler</button>
-                        </div>
-                    `;
+                    actions = `<div class="request-actions"><button class="btn-cancel" onclick="cancelOvertimeRequest(${request.id})">🗑️ Annuler</button></div>`;
                 }
                 
                 const date = new Date(request.work_date);
@@ -1837,7 +2185,6 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                     </div>
                     <div class="request-dates">📅 ${new Date(request.work_date).toLocaleDateString('fr-FR')}</div>
                     <div class="request-reason">💬 ${request.reason}</div>
-                    ${request.approver_id ? '<div style="font-size:0.9rem; color:#666;">✅ Approuvé</div>' : ''}
                     ${actions}
                 `;
                 
@@ -1845,11 +2192,10 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             });
         }
 
-        // ==================== Annuler demande ====================
+        // ==================== CANCEL ====================
         window.cancelLeaveRequest = async function(requestId) {
             if (!await showConfirm('Annuler', 'Annuler cette demande ?')) return;
             
-            // 先获取请求信息
             const { data: request } = await supabase
                 .from('leave_requests')
                 .select('*')
@@ -1857,14 +2203,12 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                 .single();
             
             if (request) {
-                // 获取假期类型
                 const { data: leaveType } = await supabase
                     .from('leave_types')
                     .select('name')
                     .eq('id', request.leave_type_id)
                     .single();
                 
-                // 如果是年假且状态是待审批，返还余额
                 if (leaveType?.name === 'conges_payes' && request.status === 'en_attente') {
                     const { data: user } = await supabase
                         .from('users')
@@ -1874,9 +2218,7 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                     
                     await supabase
                         .from('users')
-                        .update({ 
-                            conges_payes: user.conges_payes + request.days_count 
-                        })
+                        .update({ conges_payes: user.conges_payes + request.days_count })
                         .eq('id', request.user_id);
                 }
             }
@@ -1905,117 +2247,337 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             if (canSeeCalendar) await loadTeamCalendar();
         };
 
-        // ==================== Calendrier ====================
-        window.changeMonth = function(delta) {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
-            loadTeamCalendar();
-        };
-
-        async function loadTeamCalendar() {
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth() + 1;
+        // ==================== MY ATTENDANCE (aujourd'hui seulement) ====================
+        async function loadMyAttendance() {
+            const today = new Date().toISOString().split('T')[0];
             
-            document.getElementById('currentMonthDisplay').textContent = 
-                currentCalendarDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            const { data: records, error } = await supabase
+                .from('attendance_records')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .eq('record_date', today)
+                .order('action_time', { ascending: true });
             
-            const { data: users } = await supabase
-                .from('users')
-                .select('id, username')
-                .order('username');
-            
-            if (!users) return;
-            
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
-            const dateStr = firstDay.toISOString().split('T')[0];
-            const lastDateStr = lastDay.toISOString().split('T')[0];
-            
-            const [leaves, overtimes, holidays] = await Promise.all([
-                supabase.from('leave_requests').select('*').gte('start_date', dateStr).lte('end_date', lastDateStr).in('status', ['approuve', 'en_attente']),
-                supabase.from('overtime_requests').select('*').gte('work_date', dateStr).lte('work_date', lastDateStr).in('status', ['approuve', 'en_attente']),
-                supabase.from('holidays').select('*')
-            ]);
-            
-            const header = document.getElementById('calendarHeader');
-            const tbody = document.getElementById('calendarBody');
-            
-            let headerHtml = '<tr><th>Employé</th>';
-            const daysInMonth = new Date(year, month, 0).getDate();
-            
-            for (let d = 1; d <= daysInMonth; d++) {
-                const date = new Date(year, month - 1, d);
-                const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                const monthDay = `${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const holiday = holidays.data?.find(h => h.month_day === monthDay);
-                
-                let bgColor = '';
-                if (isWeekend) bgColor = 'background: #95a5a6;';
-                else if (holiday) bgColor = 'background: #9b59b6;';
-                
-                headerHtml += `<th style="${bgColor}">${d}<br><small>${dayName}</small>`;
-                if (holiday) headerHtml += `<br><small>${holiday.name}</small>`;
-                headerHtml += '</th>';
+            if (error) {
+                console.error('Erreur chargement pointage:', error);
+                return;
             }
-            headerHtml += '</tr>';
-            header.innerHTML = headerHtml;
             
-            tbody.innerHTML = '';
+            const historyDiv = document.getElementById('attendanceHistory');
             
-            for (const user of users) {
-                const row = document.createElement('tr');
-                row.className = 'user-row';
-                
-                const userCell = document.createElement('td');
-                userCell.className = 'user-name-cell';
-                userCell.textContent = user.username;
-                row.appendChild(userCell);
-                
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const cell = document.createElement('td');
-                    const date = new Date(year, month - 1, d);
-                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                    const monthDay = `${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const holiday = holidays.data?.find(h => h.month_day === monthDay);
-                    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (records && records.length > 0) {
+                let historyHtml = '';
+                records.forEach(record => {
+                    const time = new Date(record.action_time).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
                     
-                    const dayLeaves = leaves.data?.filter(l => l.user_id === user.id && l.start_date <= dateStr && l.end_date >= dateStr) || [];
-                    const dayOvertime = overtimes.data?.find(o => o.user_id === user.id && o.work_date === dateStr);
+                    let typeText = '';
+                    let typeClass = '';
                     
-                    if (isWeekend) {
-                        cell.innerHTML = dayOvertime 
-                            ? '<span class="status-overtime">Heure sup</span>'
-                            : '<span class="status-weekend">Weekend</span>';
-                    } else if (holiday) {
-                        cell.innerHTML = dayOvertime
-                            ? '<span class="status-overtime">Heure sup</span>'
-                            : '<span class="status-holiday">Férié</span>';
-                    } else if (dayLeaves.length > 0) {
-                        cell.innerHTML = '<span class="status-leave">Congé</span>';
-                    } else if (dayOvertime) {
-                        cell.innerHTML = '<span class="status-overtime">Heure sup</span>';
-                    } else {
-                        cell.innerHTML = '<span class="status-working">Au travail</span>';
+                    if (record.action_type === 'check_in') {
+                        typeText = 'Arrivée';
+                        typeClass = 'check_in';
+                    } else if (record.action_type === 'check_out') {
+                        typeText = 'Départ';
+                        typeClass = 'check_out';
+                    } else if (record.action_type === 'break_start') {
+                        typeText = 'Pause début';
+                        typeClass = 'break_start';
+                    } else if (record.action_type === 'break_end') {
+                        typeText = 'Pause fin';
+                        typeClass = 'break_end';
                     }
                     
-                    row.appendChild(cell);
-                }
+                    historyHtml += `
+                        <div class="history-item">
+                            <span class="history-time">${time}</span>
+                            <span class="history-type ${typeClass}">${typeText}</span>
+                        </div>
+                    `;
+                });
                 
-                tbody.appendChild(row);
+                historyDiv.innerHTML = historyHtml;
+            } else {
+                historyDiv.innerHTML = '<div class="history-item">Aucun pointage aujourd\'hui</div>';
             }
         }
 
-        // ==================== Demandes en attente (manager) ====================
+        // ==================== ATTENDANCE TIMELINE ====================
+        function updateAttendanceDateDisplay() {
+            const dateStr = currentAttendanceDate.toLocaleDateString('fr-FR', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            document.getElementById('currentAttendanceDate').textContent = dateStr;
+            document.getElementById('selectedDateDisplay').textContent = dateStr;
+        }
+
+        window.changeAttendanceDate = async function(delta) {
+            currentAttendanceDate.setDate(currentAttendanceDate.getDate() + delta);
+            updateAttendanceDateDisplay();
+            await loadAttendanceTimeline(currentAttendanceDate);
+        };
+
+        async function loadAttendanceTimeline(date) {
+            const selectedDate = date.toISOString().split('T')[0];
+            
+            const { data: users, error: usersError } = await supabase
+                .from('users')
+                .select('id, username, user_type')
+                .order('username');
+            
+            if (usersError) return;
+            
+            const { data: holidays } = await supabase
+                .from('holidays')
+                .select('month_day');
+            
+            const { data: attendanceRecords } = await supabase
+                .from('attendance_records')
+                .select('*')
+                .eq('record_date', selectedDate);
+            
+            const { data: leaveRequests } = await supabase
+                .from('leave_requests')
+                .select('*')
+                .in('status', ['approuve'])
+                .lte('start_date', selectedDate)
+                .gte('end_date', selectedDate);
+            
+            const timeline = document.getElementById('attendanceTimeline');
+            timeline.innerHTML = '';
+            
+            const selectedDateObj = new Date(selectedDate);
+            const dayOfWeek = selectedDateObj.getDay();
+            const monthDay = `${String(selectedDateObj.getMonth() + 1).padStart(2, '0')}-${String(selectedDateObj.getDate()).padStart(2, '0')}`;
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isHoliday = holidays?.some(h => h.month_day === monthDay);
+            
+            for (const user of users) {
+                const row = document.createElement('div');
+                row.className = 'timeline-row';
+                
+                const userAttendance = attendanceRecords?.filter(r => r.user_id === user.id) || [];
+                const checkIn = userAttendance.find(r => r.action_type === 'check_in');
+                const checkOut = userAttendance.find(r => r.action_type === 'check_out');
+                const breakStart = userAttendance.find(r => r.action_type === 'break_start');
+                const breakEnd = userAttendance.find(r => r.action_type === 'break_end');
+                
+                const leave = leaveRequests?.find(r => r.user_id === user.id);
+                
+                let statusClass = '';
+                let statusText = '';
+                let recordsHtml = '';
+                
+                if (isWeekend) {
+                    statusClass = 'weekend';
+                    statusText = 'Weekend';
+                } else if (isHoliday) {
+                    statusClass = 'holiday';
+                    statusText = 'Férié';
+                } else if (leave) {
+                    statusClass = 'leave';
+                    statusText = 'En congé';
+                } else if (userAttendance.length > 0) {
+                    statusClass = 'present';
+                    statusText = 'Présent';
+                    
+                    // Afficher tous les enregistrements
+                    if (checkIn) {
+                        const time = new Date(checkIn.action_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        recordsHtml += `<div class="timeline-record check_in">✅ Arrivée: ${time}</div>`;
+                    }
+                    if (breakStart) {
+                        const time = new Date(breakStart.action_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        recordsHtml += `<div class="timeline-record break_start">☕ Pause début: ${time}</div>`;
+                    }
+                    if (breakEnd) {
+                        const time = new Date(breakEnd.action_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        recordsHtml += `<div class="timeline-record break_end">⚡ Pause fin: ${time}</div>`;
+                    }
+                    if (checkOut) {
+                        const time = new Date(checkOut.action_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        recordsHtml += `<div class="timeline-record check_out">🏠 Départ: ${time}</div>`;
+                    }
+                } else {
+                    statusClass = 'absent';
+                    statusText = 'Absent';
+                }
+                
+                const avatarLetter = user.username.charAt(0).toUpperCase();
+                
+                row.innerHTML = `
+                    <div class="timeline-user-avatar">${avatarLetter}</div>
+                    <div class="timeline-user-info">
+                        <div class="timeline-user-name">${user.username}</div>
+                        <div class="timeline-user-type">${typeLabels[user.user_type] || user.user_type}</div>
+                    </div>
+                    <div class="timeline-status ${statusClass}">${statusText}</div>
+                    <div class="timeline-records">${recordsHtml}</div>
+                `;
+                
+                timeline.appendChild(row);
+            }
+        }
+
+// ==================== TEAM CALENDAR ====================
+window.changeMonth = async function(delta) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+    await loadTeamCalendar();
+};
+
+async function loadTeamCalendar() {
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    // 更新月份显示
+    document.getElementById('currentMonthDisplay').textContent = 
+        currentCalendarDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    
+    // 计算当月天数
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    // 设置CSS变量用于表格列宽（在表格上设置）
+    const calendarTable = document.querySelector('.team-calendar');
+    if (calendarTable) {
+        calendarTable.style.setProperty('--days-count', daysInMonth);
+    }
+    
+    // 获取所有员工
+    const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, user_type')
+        .order('username');
+    if (usersError) {
+        console.error('Erreur chargement utilisateurs:', usersError);
+        return;
+    }
+    
+    // 获取当月所有节假日
+    const { data: holidays } = await supabase
+        .from('holidays')
+        .select('month_day');
+    
+    // 构建当月日期范围
+    const startDate = firstDay.toISOString().split('T')[0];
+    const endDate = lastDay.toISOString().split('T')[0];
+    
+    // 获取当月所有考勤记录
+    const { data: attendanceRecords } = await supabase
+        .from('attendance_records')
+        .select('*')
+        .gte('record_date', startDate)
+        .lte('record_date', endDate);
+    
+    // 获取当月所有已批准的请假
+    const { data: leaveRequests } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .eq('status', 'approuve')
+        .gte('start_date', startDate)
+        .lte('end_date', endDate);
+    
+    // 获取当月所有已批准的加班
+    const { data: overtimeRequests } = await supabase
+        .from('overtime_requests')
+        .select('*')
+        .eq('status', 'approuve')
+        .gte('work_date', startDate)
+        .lte('work_date', endDate);
+    
+    console.log('加班请求:', overtimeRequests); // 调试用，可删除
+    
+    // 生成表头
+    let headers = '<th>Employé</th>';
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dayOfWeek = date.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const weekendStyle = isWeekend ? ' style="background: #34495e;"' : '';
+        
+        headers += `<th${weekendStyle}>${day}<br><small>${date.toLocaleDateString('fr-FR', { weekday: 'short' })}</small></th>`;
+    }
+    document.getElementById('calendarHeader').innerHTML = `<tr>${headers}</tr>`;
+    
+    // 生成日历内容
+    const tbody = document.getElementById('calendarBody');
+    tbody.innerHTML = '';
+    
+    for (const user of users) {
+        let rowHtml = `<td class="user-name-cell">${user.username}</td>`;
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayOfWeek = date.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            
+            // 判断节假日
+            const monthDay = `${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isHoliday = holidays?.some(h => h.month_day === monthDay);
+            
+            // 判断加班（已批准）
+            const overtime = overtimeRequests?.find(r => r.user_id === user.id && r.work_date === dateStr);
+            
+            // 判断请假（已批准）
+            const leave = leaveRequests?.find(r => 
+                r.user_id === user.id && 
+                r.start_date <= dateStr && 
+                r.end_date >= dateStr
+            );
+            
+            // 判断是否有上班打卡
+            const attendance = attendanceRecords?.find(r => 
+                r.user_id === user.id && 
+                r.record_date === dateStr && 
+                r.action_type === 'check_in'
+            );
+            
+            // 确定状态（优先级：加班 > 节假日 > 周末 > 请假 > 打卡 > 缺席）
+            let statusClass = '';
+            let statusText = '';
+            
+            if (overtime) {
+                statusClass = 'status-overtime';
+                statusText = 'HS';
+            } else if (isHoliday) {
+                statusClass = 'status-holiday';
+                statusText = 'Férié';
+            } else if (isWeekend) {
+                statusClass = 'status-weekend';
+                statusText = 'W/E';
+            } else if (leave) {
+                statusClass = 'status-leave';
+                statusText = 'Congé';
+            } else if (attendance) {
+                statusClass = 'status-working';
+                statusText = '✓';
+            } else {
+                statusClass = 'status-absent';
+                statusText = '✗';
+            }
+            
+            rowHtml += `<td><span class="${statusClass}">${statusText}</span></td>`;
+        }
+        
+        const row = document.createElement('tr');
+        row.innerHTML = rowHtml;
+        tbody.appendChild(row);
+    }
+}
+      // ==================== PENDING REQUESTS (MANAGER) ====================
         async function loadPendingLeaveRequests() {
             const { data, error } = await supabase
                 .from('leave_requests')
                 .select(`
                     *,
-                    user:users!leave_requests_user_id_fkey (username),
+                    user:users!user_id (username),
                     leave_type:leave_types!leave_type_id (name_fr)
                 `)
                 .eq('status', 'en_attente')
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: false });
                 
             if (error) return;
             
@@ -2023,26 +2585,26 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             container.innerHTML = '';
             
             if (!data || data.length === 0) {
-                container.innerHTML = '<p class="empty-state">Aucune demande</p>';
+                container.innerHTML = '<p class="empty-state">Aucune demande en attente</p>';
                 return;
             }
             
             data.forEach(request => {
                 const card = document.createElement('div');
                 card.className = 'leave-request-card en_attente';
-                
                 card.innerHTML = `
                     <div class="request-header">
-                        <span class="request-user">${request.user?.username || '?'}</span>
-                        <span class="request-type" style="background: #f39c12">${request.leave_type?.name_fr || 'Congé'}</span>
+                        <span class="request-user">${request.user?.username}</span>
+                        <span class="request-type" style="background: #f39c12;">En attente</span>
                     </div>
                     <div class="request-dates">
                         📅 Du ${new Date(request.start_date).toLocaleDateString('fr-FR')} au ${new Date(request.end_date).toLocaleDateString('fr-FR')} (${request.days_count} jours)
                     </div>
+                    <div><strong>Type:</strong> ${request.leave_type?.name_fr}</div>
                     ${request.reason ? `<div class="request-reason">💬 ${request.reason}</div>` : ''}
                     <div class="request-actions">
-                        <button class="btn-validate" onclick="approveLeaveRequest(${request.id})">✅ Approuver</button>
-                        <button class="btn-refuse" onclick="refuseLeaveRequest(${request.id})">❌ Refuser</button>
+                        <button class="btn-validate" onclick="approveLeave(${request.id})">✅ Approuver</button>
+                        <button class="btn-refuse" onclick="rejectLeave(${request.id})">❌ Refuser</button>
                     </div>
                 `;
                 
@@ -2055,10 +2617,10 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
                 .from('overtime_requests')
                 .select(`
                     *,
-                    user:users!overtime_requests_user_id_fkey (username)
+                    user:users!user_id (username)
                 `)
                 .eq('status', 'en_attente')
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: false });
                 
             if (error) return;
             
@@ -2066,29 +2628,23 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             container.innerHTML = '';
             
             if (!data || data.length === 0) {
-                container.innerHTML = '<p class="empty-state">Aucune demande</p>';
+                container.innerHTML = '<p class="empty-state">Aucune demande en attente</p>';
                 return;
             }
             
             data.forEach(request => {
-                const date = new Date(request.work_date);
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                
                 const card = document.createElement('div');
                 card.className = 'leave-request-card en_attente';
-                
                 card.innerHTML = `
                     <div class="request-header">
-                        <span class="request-user">${request.user?.username || '?'}</span>
-                        <span class="request-type" style="background: #f39c12">Heure sup</span>
+                        <span class="request-user">${request.user?.username}</span>
+                        <span class="request-type" style="background: #f39c12;">En attente</span>
                     </div>
-                    <div class="request-dates">
-                        📅 ${new Date(request.work_date).toLocaleDateString('fr-FR')} (${isWeekend ? 'Weekend' : 'Férié'})
-                    </div>
+                    <div class="request-dates">📅 ${new Date(request.work_date).toLocaleDateString('fr-FR')}</div>
                     <div class="request-reason">💬 ${request.reason}</div>
                     <div class="request-actions">
-                        <button class="btn-validate" onclick="approveOvertimeRequest(${request.id})">✅ Approuver</button>
-                        <button class="btn-refuse" onclick="refuseOvertimeRequest(${request.id})">❌ Refuser</button>
+                        <button class="btn-validate" onclick="approveOvertime(${request.id})">✅ Approuver</button>
+                        <button class="btn-refuse" onclick="rejectOvertime(${request.id})">❌ Refuser</button>
                     </div>
                 `;
                 
@@ -2096,100 +2652,41 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             });
         }
 
-        // ==================== Approuver/Refuser ====================
-        window.approveLeaveRequest = async function(requestId) {
-            if (!await showConfirm('Approuver', 'Approuver cette demande ?')) return;
-            
-            const { data: request } = await supabase
-                .from('leave_requests')
-                .select('*')
-                .eq('id', requestId)
-                .single();
-            
-            if (request) {
-                // 余额已经在提交时扣过了，不需要再扣
-            }
+        // ==================== APPROVE/REJECT (version simple qui fonctionnait avant) ====================
+        window.approveLeave = async function(requestId) {
+            const comment = await showPrompt('Approuver', 'Commentaire (optionnel)');
+            if (comment === null) return;
             
             await supabase
                 .from('leave_requests')
-                .update({
-                    status: 'approuve',
-                    approver_id: currentUserId,
-                    approved_at: new Date().toISOString()
-                })
+                .update({ status: 'approuve' })
                 .eq('id', requestId);
             
             showAlert('Demande approuvée', 'success');
             await loadPendingLeaveRequests();
-            if (!isManager && request?.user_id === currentUserId) await loadMyBalance();
             if (canSeeCalendar) await loadTeamCalendar();
         };
 
-        window.refuseLeaveRequest = async function(requestId) {
-            const comments = await showPrompt('Refuser', 'Motif du refus :');
-            if (!comments) return;
+        window.rejectLeave = async function(requestId) {
+            const comment = await showPrompt('Refuser', 'Motif du refus');
+            if (comment === null) return;
             
-            if (!await showConfirm('Refuser', 'Confirmer le refus ?')) return;
-            
-            // 先获取请求信息
-            const { data: request } = await supabase
-                .from('leave_requests')
-                .select('*')
-                .eq('id', requestId)
-                .single();
-            
-            if (request) {
-                // 获取假期类型
-                const { data: leaveType } = await supabase
-                    .from('leave_types')
-                    .select('name')
-                    .eq('id', request.leave_type_id)
-                    .single();
-                
-                // 如果是年假且状态是待审批，返还余额
-                if (leaveType?.name === 'conges_payes' && request.status === 'en_attente') {
-                    const { data: user } = await supabase
-                        .from('users')
-                        .select('conges_payes')
-                        .eq('id', request.user_id)
-                        .single();
-                    
-                    await supabase
-                        .from('users')
-                        .update({ 
-                            conges_payes: user.conges_payes + request.days_count 
-                        })
-                        .eq('id', request.user_id);
-                }
-            }
-            
-            // 更新请求状态为拒绝
             await supabase
                 .from('leave_requests')
-                .update({
-                    status: 'refuse',
-                    approver_id: currentUserId,
-                    approved_at: new Date().toISOString(),
-                    comments: comments
-                })
+                .update({ status: 'refuse' })
                 .eq('id', requestId);
             
             showAlert('Demande refusée', 'info');
             await loadPendingLeaveRequests();
-            if (currentUserId === request?.user_id) await loadMyBalance();
-            if (canSeeCalendar) await loadTeamCalendar();
         };
 
-        window.approveOvertimeRequest = async function(requestId) {
-            if (!await showConfirm('Approuver', 'Approuver cette demande ?')) return;
+        window.approveOvertime = async function(requestId) {
+            const comment = await showPrompt('Approuver', 'Commentaire (optionnel)');
+            if (comment === null) return;
             
             await supabase
                 .from('overtime_requests')
-                .update({
-                    status: 'approuve',
-                    approver_id: currentUserId,
-                    approved_at: new Date().toISOString()
-                })
+                .update({ status: 'approuve' })
                 .eq('id', requestId);
             
             showAlert('Demande approuvée', 'success');
@@ -2197,30 +2694,22 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             if (canSeeCalendar) await loadTeamCalendar();
         };
 
-        window.refuseOvertimeRequest = async function(requestId) {
-            const comments = await showPrompt('Refuser', 'Motif du refus :');
-            if (!comments) return;
-            
-            if (!await showConfirm('Refuser', 'Confirmer le refus ?')) return;
+        window.rejectOvertime = async function(requestId) {
+            const comment = await showPrompt('Refuser', 'Motif du refus');
+            if (comment === null) return;
             
             await supabase
                 .from('overtime_requests')
-                .update({
-                    status: 'refuse',
-                    approver_id: currentUserId,
-                    approved_at: new Date().toISOString(),
-                    comments: comments
-                })
+                .update({ status: 'refuse' })
                 .eq('id', requestId);
             
             showAlert('Demande refusée', 'info');
             await loadPendingOvertimeRequests();
-            if (canSeeCalendar) await loadTeamCalendar();
         };
 
-        // ==================== Tous les soldes (manager) ====================
+        // ==================== ALL BALANCES (MANAGER) ====================
         async function loadAllBalances() {
-            const { data: users, error } = await supabase
+            const { data, error } = await supabase
                 .from('users')
                 .select('id, username, conges_payes')
                 .order('username');
@@ -2230,123 +2719,65 @@ document.getElementById('submitLeaveBtn').addEventListener('click', async () => 
             const container = document.getElementById('allBalances');
             container.innerHTML = '';
             
-            if (!users || users.length === 0) {
+            if (!data || data.length === 0) {
                 container.innerHTML = '<p class="empty-state">Aucun utilisateur</p>';
                 return;
             }
             
-            users.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.style.marginBottom = '15px';
+            for (const user of data) {
+                const card = document.createElement('div');
+                card.className = 'balance-card';
+                card.id = `balance-${user.id}`;
                 
-                userDiv.innerHTML = `
-                    <div style="background: white; border-radius: 15px; padding: 15px; border-left: 4px solid #2ecc71;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong>👤 ${user.username}</strong>
-                                <div style="color: #27ae60; font-weight: bold; margin-top: 5px;">
-                                    ${user.conges_payes} jours
-                                </div>
-                            </div>
-                            <button class="btn-edit" onclick="editBalance(${user.id}, ${user.conges_payes})">✏️ Modifier</button>
+                let editButton = '';
+                if (isManager) {
+                    editButton = `<button class="edit-balance-btn" onclick="editBalance(${user.id}, ${user.conges_payes})">✏️</button>`;
+                }
+                
+                card.innerHTML = `
+                    ${editButton}
+                    <div class="balance-header">
+                        <span>${user.username}</span>
+                        <span>${new Date().getFullYear()}</span>
+                    </div>
+                    <div class="balance-numbers">
+                        <div class="balance-item">
+                            <div class="balance-value" id="balance-value-${user.id}">${user.conges_payes}</div>
+                            <div class="balance-label">Jours restants</div>
                         </div>
                     </div>
                 `;
                 
-                container.appendChild(userDiv);
-            });
+                container.appendChild(card);
+            }
         }
 
+        // ==================== EDIT BALANCE (MANAGER) ====================
         window.editBalance = async function(userId, currentBalance) {
-            const newTotal = await showPrompt('Modifier solde', 'Nouveau solde de congés payés :', currentBalance);
-            if (!newTotal) return;
+            const newBalance = await showPrompt(
+                'Modifier le solde',
+                `Solde actuel: ${currentBalance} jours`,
+                currentBalance.toString()
+            );
             
-            await supabase
+            if (newBalance === null) return;
+            
+            const parsed = parseFloat(newBalance);
+            if (isNaN(parsed)) {
+                showAlert('Veuillez entrer un nombre valide', 'error');
+                return;
+            }
+            
+            const { error } = await supabase
                 .from('users')
-                .update({ conges_payes: parseFloat(newTotal) })
+                .update({ conges_payes: parsed })
                 .eq('id', userId);
             
-            showAlert('Solde modifié', 'success');
-            await loadAllBalances();
-            if (currentUserId === userId) await loadMyBalance();
+            if (!error) {
+                showAlert('Solde mis à jour', 'success');
+                document.getElementById(`balance-value-${userId}`).textContent = parsed;
+            }
         };
-
-        // ==================== Pointage ====================
-        async function loadAttendance() {
-            const today = new Date().toISOString().split('T')[0];
-            const { data } = await supabase
-                .from('attendance')
-                .select('*')
-                .eq('user_id', currentUserId)
-                .eq('date', today)
-                .maybeSingle();
-                
-            const btn = document.getElementById('attendanceBtn');
-            const timeDiv = document.getElementById('attendanceTime');
-            
-            if (data) {
-                if (data.check_in && !data.check_out) {
-                    btn.textContent = '🟢 Pointer sortie';
-                    btn.classList.add('checked-in');
-                    timeDiv.innerHTML = `Entrée: ${data.check_in}`;
-                } else if (data.check_in && data.check_out) {
-                    btn.textContent = '✅ Terminé';
-                    btn.disabled = true;
-                    timeDiv.innerHTML = `Entrée: ${data.check_in} | Sortie: ${data.check_out}`;
-                }
-            } else {
-                btn.textContent = '🔴 Pointer entrée';
-                btn.classList.remove('checked-in');
-                timeDiv.innerHTML = '';
-            }
-        }
-
-        document.getElementById('attendanceBtn').addEventListener('click', async function() {
-            const today = new Date().toISOString().split('T')[0];
-            const now = new Date().toTimeString().split(' ')[0].substring(0,5);
-            
-            const { data } = await supabase
-                .from('attendance')
-                .select('*')
-                .eq('user_id', currentUserId)
-                .eq('date', today)
-                .maybeSingle();
-                
-            if (!data) {
-                await supabase
-                    .from('attendance')
-                    .insert([{ user_id: currentUserId, date: today, check_in: now }]);
-                showAlert('Entrée enregistrée', 'success');
-            } else if (data.check_in && !data.check_out) {
-                await supabase
-                    .from('attendance')
-                    .update({ check_out: now })
-                    .eq('id', data.id);
-                showAlert('Sortie enregistrée', 'success');
-            }
-            
-            await loadAttendance();
-            if (canSeeCalendar) await loadTeamCalendar();
-        });
-
-        // ==================== Tabs ====================
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-                
-                if (btn.dataset.tab === 'team-calendar' && canSeeCalendar) {
-                    loadTeamCalendar();
-                } else if (btn.dataset.tab === 'team-leaves' && isManager) {
-                    loadPendingLeaveRequests();
-                    loadPendingOvertimeRequests();
-                } else if (btn.dataset.tab === 'balances' && isManager) {
-                    loadAllBalances();
-                }
-            });
-        });
     </script>
 </body>
 </html>
