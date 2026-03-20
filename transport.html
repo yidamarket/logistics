@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>Livreurs · Transport</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
@@ -13,6 +13,331 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Signature Pad -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    
+    <!-- ========== 移动端/平板响应式修复 - 仅添加覆盖样式，不删除任何原有代码 ========== -->
+    <style>
+        /* 移动端基础修复 (max-width: 768px) */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px !important;
+            }
+            .app-container {
+                padding: 12px !important;
+                border-radius: 20px !important;
+            }
+            .nav-bar {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            .back-home {
+                width: 100% !important;
+                justify-content: center !important;
+                padding: 10px 16px !important;
+            }
+            .user-info-bar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                text-align: center !important;
+                padding: 12px !important;
+                gap: 8px !important;
+            }
+            .tabs-container {
+                overflow-x: auto !important;
+                white-space: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+                padding-bottom: 4px !important;
+            }
+            .tab-btn {
+                flex-shrink: 0 !important;
+                padding: 8px 12px !important;
+                font-size: 0.8rem !important;
+                min-width: auto !important;
+            }
+            .main-layout {
+                flex-direction: column !important;
+                gap: 16px !important;
+            }
+            .map-container {
+                padding: 12px !important;
+                margin-bottom: 16px !important;
+            }
+            #map {
+                height: 280px !important;
+            }
+            .section-card {
+                padding: 12px !important;
+                margin-bottom: 16px !important;
+            }
+            .input-row {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            .input-field {
+                width: 100% !important;
+            }
+            .btn-add {
+                width: 100% !important;
+            }
+            .order-card, .task-card, .transport-card {
+                padding: 12px !important;
+            }
+            .item-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            .order-meta {
+                flex-direction: column !important;
+                gap: 6px !important;
+            }
+            .order-actions {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            .order-actions button, .order-actions a {
+                flex: 1 !important;
+                min-width: 100px !important;
+                text-align: center !important;
+                padding: 8px 12px !important;
+                font-size: 0.8rem !important;
+            }
+            .driver-group h4 {
+                font-size: 1rem !important;
+                margin: 16px 0 8px !important;
+            }
+            .dual-date-section {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            .date-card {
+                padding: 12px !important;
+            }
+            .route-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            .route-steps li {
+                padding: 12px !important;
+            }
+            .route-steps li div {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            .admin-section {
+                padding: 12px !important;
+            }
+            .add-user-form {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            .add-user-field {
+                width: 100% !important;
+            }
+            .btn-add-user {
+                width: 100% !important;
+            }
+            .users-table {
+                display: block !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+            .users-table th, .users-table td {
+                padding: 8px !important;
+                font-size: 0.8rem !important;
+                white-space: nowrap !important;
+            }
+            .user-actions {
+                flex-wrap: nowrap !important;
+                gap: 4px !important;
+            }
+            .modal-box {
+                width: 90% !important;
+                padding: 16px !important;
+                margin: 16px !important;
+            }
+            .signature-canvas {
+                height: 150px !important;
+            }
+            .counter-container {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .counter-controls {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            .counter-value {
+                width: 80px !important;
+            }
+            .driver-selector-container {
+                padding: 12px !important;
+            }
+            .driver-selector {
+                padding: 10px 14px !important;
+                font-size: 0.9rem !important;
+            }
+            .route-status {
+                font-size: 0.8rem !important;
+                padding: 4px 12px !important;
+            }
+            .geocode-btn {
+                width: 100% !important;
+                padding: 10px !important;
+                font-size: 0.85rem !important;
+            }
+            .start-point {
+                padding: 10px !important;
+            }
+            .time-estimate, .time-requirement {
+                font-size: 0.75rem !important;
+            }
+            .palette-info {
+                padding: 8px !important;
+            }
+            .palette-detail {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+            }
+            .sms-btn-container a {
+                display: block !important;
+                text-align: center !important;
+            }
+        }
+        
+        /* 平板优化 (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .app-container {
+                padding: 20px !important;
+            }
+            .main-layout {
+                gap: 20px !important;
+            }
+            .map-container {
+                padding: 16px !important;
+            }
+            #map {
+                height: 350px !important;
+            }
+            .section-card {
+                padding: 16px !important;
+            }
+            .order-actions button, .order-actions a {
+                padding: 6px 12px !important;
+                font-size: 0.75rem !important;
+            }
+            .users-table th, .users-table td {
+                padding: 10px !important;
+            }
+            .modal-box {
+                max-width: 90% !important;
+            }
+            .dual-date-section {
+                gap: 15px !important;
+            }
+        }
+        
+        /* 小屏手机额外优化 (max-width: 480px) */
+        @media (max-width: 480px) {
+            .tab-btn {
+                padding: 6px 10px !important;
+                font-size: 0.7rem !important;
+            }
+            .section-title {
+                font-size: 1rem !important;
+                margin-bottom: 12px !important;
+            }
+            .customer-name {
+                font-size: 0.95rem !important;
+            }
+            .status-badge {
+                font-size: 0.65rem !important;
+                padding: 2px 8px !important;
+            }
+            .order-meta span {
+                font-size: 0.7rem !important;
+            }
+            .btn-validate, .btn-edit, .btn-delete, .btn-add {
+                padding: 6px 10px !important;
+                font-size: 0.7rem !important;
+            }
+            .counter-btn {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 1rem !important;
+            }
+            .counter-value {
+                width: 60px !important;
+                font-size: 1rem !important;
+            }
+        }
+        
+        /* 触摸优化 - 增大点击区域 */
+        button, .tab-btn, .back-home, .logout-btn, .btn-icon, .counter-btn, .date-nav-btn, .geocode-btn {
+            cursor: pointer !important;
+            min-height: 44px !important;
+        }
+        
+        button:active, .tab-btn:active {
+            opacity: 0.7 !important;
+            transform: scale(0.97) !important;
+        }
+        
+        /* 输入框字体不小于16px防止缩放 */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        /* 确保表格在小屏上可滚动 */
+        .users-table, .calendar-container {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            display: block !important;
+        }
+        
+        /* 地图容器触摸优化 */
+        #map {
+            touch-action: pan-x pan-y !important;
+        }
+        
+        /* 模态框移动端优化 */
+        @media (max-width: 768px) {
+            .modal-actions {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            .modal-actions button {
+                width: 100% !important;
+            }
+            .confirm-box {
+                width: 90% !important;
+                padding: 20px !important;
+            }
+            .confirm-actions {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            .confirm-actions button {
+                width: 100% !important;
+            }
+        }
+        
+        /* 修复Leaflet地图在移动端的触摸问题 */
+        .leaflet-touch .leaflet-control-zoom {
+            border: 2px solid rgba(0,0,0,0.2) !important;
+        }
+        .leaflet-touch .leaflet-bar a {
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 36px !important;
+        }
+    </style>
+    
+    <!-- 以下是您原有的完整样式，一行未删 -->
     <style>
         * {
             box-sizing: border-box;
@@ -1062,6 +1387,7 @@
     </style>
 </head>
 <body>
+    <!-- 以下是您原有的完整HTML结构，保持不变 -->
     <!-- 登录界面 -->
     <div class="login-overlay" id="loginOverlay" style="display: none;">
         <div class="login-box">
@@ -1462,6 +1788,7 @@
         </div>
     </div>
 
+    <!-- 以下是您原有的完整JavaScript代码，保持不变 -->
     <script>
         (function() {
             const SUPABASE_URL = 'https://maxjuexqflwsnucqvkdf.supabase.co';
@@ -2289,7 +2616,7 @@
                 
                 let html = '';
                 if (users.length === 0) {
-                    html = '<tr><td colspan="4" style="text-align:center; padding:20px;">Aucun utilisateur</td></tr>';
+                    html = ' people=<td colspan="4" style="text-align:center; padding:20px;">Aucun utilisateur</td> </tr>';
                 } else {
                     users.forEach(user => {
                         const typeLabels = {

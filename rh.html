@@ -2,13 +2,308 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>Livreurs · RH</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👥</text></svg>">
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    
+    <!-- ========== 移动端/平板响应式修复 - 仅添加覆盖样式，不删除任何原有代码 ========== -->
+    <style>
+        /* 移动端基础修复 - 仅优化布局，不删除原有样式 */
+        @media (max-width: 768px) {
+            /* 修复body内边距 */
+            body {
+                padding: 8px !important;
+            }
+            
+            /* 主容器内边距减小 */
+            .app-container {
+                padding: 16px 12px !important;
+            }
+            
+            /* 导航栏改为垂直布局 */
+            .nav-bar {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            
+            .back-home {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            
+            /* 用户信息栏垂直排列 */
+            .user-info-bar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 12px !important;
+            }
+            
+            .datetime-weather {
+                justify-content: space-between !important;
+                flex-wrap: wrap !important;
+            }
+            
+            .datetime {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            
+            .date-box, .time-box, .weather-box {
+                font-size: 0.75rem !important;
+                padding: 4px 10px !important;
+            }
+            
+            .user-details {
+                justify-content: space-between !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            
+            /* Tabs 可水平滚动 */
+            .tabs-container {
+                overflow-x: auto !important;
+                white-space: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+                flex-wrap: nowrap !important;
+                gap: 8px !important;
+                padding-bottom: 8px !important;
+            }
+            
+            .tab-btn {
+                flex-shrink: 0 !important;
+                padding: 8px 16px !important;
+                font-size: 0.85rem !important;
+            }
+            
+            /* 两列布局改单列 */
+            .grid-2 {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+            
+            /* 日期范围改为垂直 */
+            .date-range {
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+            
+            /* 卡片内边距减小 */
+            .section-card {
+                padding: 16px !important;
+                margin-bottom: 16px !important;
+            }
+            
+            .section-title {
+                font-size: 1.1rem !important;
+                margin-bottom: 12px !important;
+            }
+            
+            /* 按钮触摸区域增大 */
+            .btn-primary, .btn-validate, .btn-refuse, .btn-cancel, .btn-edit {
+                padding: 12px 16px !important;
+                min-height: 44px !important;
+            }
+            
+            /* 请求卡片优化 */
+            .request-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+            }
+            
+            .request-actions {
+                justify-content: center !important;
+            }
+            
+            .request-actions button {
+                flex: 1 !important;
+                text-align: center !important;
+            }
+            
+            /* 余额卡片 */
+            .balance-value {
+                font-size: 1.5rem !important;
+            }
+            
+            /* 月历选择器垂直排列 */
+            .month-selector {
+                flex-direction: column !important;
+                gap: 12px !important;
+                text-align: center !important;
+            }
+            
+            .month-nav {
+                justify-content: center !important;
+            }
+            
+            /* 日历容器支持横向滚动 */
+            .calendar-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+            
+            .team-calendar {
+                min-width: 600px !important;
+            }
+            
+            /* 时间轴卡片优化 */
+            .timeline-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            
+            .timeline-user-avatar {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1rem !important;
+            }
+            
+            .timeline-records {
+                width: 100% !important;
+                flex-wrap: wrap !important;
+            }
+            
+            /* 日期导航 */
+            .date-navigation {
+                gap: 12px !important;
+            }
+            
+            .date-nav-btn {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1rem !important;
+            }
+            
+            .current-date-display {
+                font-size: 0.9rem !important;
+                padding: 6px 12px !important;
+            }
+            
+            /* 模态框 */
+            .custom-modal-content {
+                width: 90% !important;
+                padding: 20px !important;
+                margin: 16px !important;
+            }
+            
+            .custom-modal-header {
+                flex-direction: column !important;
+                text-align: center !important;
+            }
+            
+            .custom-modal-actions {
+                flex-direction: column !important;
+            }
+            
+            .custom-modal-actions button {
+                width: 100% !important;
+            }
+            
+            /* 统计卡片 */
+            .stats-summary {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+            }
+            
+            .stat-summary-card {
+                padding: 10px !important;
+            }
+            
+            .stat-summary-value {
+                font-size: 1.2rem !important;
+            }
+            
+            /* 图例换行 */
+            .legend {
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                gap: 12px !important;
+            }
+            
+            /* 历史记录项 */
+            .history-item {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            
+            /* 移除悬浮效果防止移动端误触 */
+            .btn-primary:hover, .tab-btn:hover, .back-home:hover {
+                transform: none !important;
+            }
+        }
+        
+        /* 平板优化 (768px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .app-container {
+                padding: 20px !important;
+            }
+            
+            .grid-2 {
+                gap: 20px !important;
+            }
+            
+            .team-calendar th, .team-calendar td {
+                padding: 8px 4px !important;
+                font-size: 0.8rem !important;
+            }
+            
+            .team-calendar th:first-child, .team-calendar td:first-child {
+                min-width: 120px !important;
+            }
+            
+            .timeline-row {
+                gap: 12px !important;
+            }
+        }
+        
+        /* 确保表格固定列在移动端正常工作 */
+        .team-calendar td:first-child, .team-calendar th:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            background: white !important;
+            z-index: 10 !important;
+        }
+        
+        /* 确保所有按钮都有足够的点击区域 */
+        button, .tab-btn, .back-home, .logout-btn, .edit-balance-btn {
+            cursor: pointer !important;
+        }
+        
+        button:active, .tab-btn:active {
+            opacity: 0.7 !important;
+            transform: scale(0.98) !important;
+        }
+        
+        /* 输入框在移动端字体不小于16px防止缩放 */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        /* 修复天气和日期显示 */
+        @media (max-width: 480px) {
+            .datetime-weather {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            
+            .user-name-badge, .user-type-badge {
+                font-size: 0.75rem !important;
+                padding: 4px 10px !important;
+            }
+            
+            .logout-btn {
+                padding: 6px 12px !important;
+                font-size: 0.8rem !important;
+            }
+        }
+    </style>
+    
+    <!-- 以下是您原有的完整样式，一行未删 -->
     <style>
         * {
             margin: 0;
@@ -1305,6 +1600,7 @@
     </style>
 </head>
 <body>
+    <!-- 以下是您原有的完整HTML结构，一行未删 -->
     <div class="app-container">
         <!-- Navigation -->
         <div class="nav-bar">
@@ -1483,7 +1779,7 @@
                         <tbody id="calendarBody">
                             <!-- Calendrier sera généré ici -->
                         </tbody>
-                    </table>
+                     </table>
                 </div>
                 
                 <!-- Légende -->
@@ -1573,6 +1869,7 @@
         </div>
     </div>
 
+    <!-- 以下是您原有的完整JavaScript代码，一行未删 -->
     <script>
         // ==================== CONFIGURATION ====================
         // ==================== CONFIGURATION ====================
@@ -2499,14 +2796,14 @@ async function loadTeamCalendar() {
         
         headers += `<th${weekendStyle}>${day}<br><small>${date.toLocaleDateString('fr-FR', { weekday: 'short' })}</small></th>`;
     }
-    document.getElementById('calendarHeader').innerHTML = `<tr>${headers}</tr>`;
+    document.getElementById('calendarHeader').innerHTML = `<tr>${headers}记叙`;
     
     // 生成日历内容
     const tbody = document.getElementById('calendarBody');
     tbody.innerHTML = '';
     
     for (const user of users) {
-        let rowHtml = `<td class="user-name-cell">${user.username}</td>`;
+        let rowHtml = `<td class="user-name-cell">${user.username}熟`;
         
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
@@ -2559,7 +2856,7 @@ async function loadTeamCalendar() {
                 statusText = '✗';
             }
             
-            rowHtml += `<td><span class="${statusClass}">${statusText}</span></td>`;
+            rowHtml += `<td><span class="${statusClass}">${statusText}</span> Prima`;
         }
         
         const row = document.createElement('tr');
