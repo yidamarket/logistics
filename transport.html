@@ -2729,12 +2729,49 @@
                 }
                 
                 // 生成三种语言的短信内容
-                const frenchText = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeText}.\nVotre livreur: ${chauffeurName} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
-                
-                const englishText = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeText}.\nYour driver: ${chauffeurName} 📞 ${chauffeurPhone || 'Not available'}\nPlease keep your phone accessible.`;
-                
-                const chineseText = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeText} 配送。\n您的司机: ${chauffeurName} 📞 ${chauffeurPhone || '暂无电话'}\n请保持电话畅通。`;
-                
+                const frenchText = `📦 Notification Yida – Livraison aujourd'hui
+Bonjour ${order.customer_name},
+
+Nous vous informons que votre commande sera livrée aujourd'hui ${timeText}.
+
+Livreur : ${chauffeurName}
+Téléphone : ${chauffeurPhone || 'Non disponible'}
+
+En cas de changement, merci de contacter le livreur.
+Merci de rester joignable.
+Nous vous souhaitons une excellente journée.
+
+Cordialement,
+Yida`;
+
+const englishText = `📦 Yida Delivery Notification – Scheduled for today
+Dear ${order.customer_name},
+
+We would like to inform you that your order is scheduled for delivery today ${timeText}.
+
+Driver: ${chauffeurName}
+Phone: ${chauffeurPhone || 'Not available'}
+
+In case of any changes, please contact the driver.
+Please keep your phone accessible.
+We wish you a pleasant day.
+
+Kind regards,
+Yida`;
+
+const chineseText = `📦 Yida配送通知 – 今日送达
+尊敬的 ${order.customer_name}，
+
+您好！您的订单预计于今天 ${timeText} 送达。
+
+配送员：${chauffeurName}
+联系电话：${chauffeurPhone || '暂无电话'}
+
+如有变动，请及时联系配送员。
+请保持电话畅通。
+祝您工作顺利，生活愉快！
+
+Yida`;
                 // 合并三种语言，用分隔线分开
                 return `${frenchText}\n\n---\n\n${englishText}\n\n---\n\n${chineseText}`;
             }
