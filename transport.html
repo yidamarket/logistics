@@ -1680,8 +1680,10 @@
                 LIVRE: 'livre' 
             };
             
+       
+
             const START_POINT = { 
-                address: '98 Rue Anselme Rondenay, 94400 Vitry-sur-Seine', 
+                address: '98 Rue Anselme Rondenay, 94400 Vitry-sur-Seine, France', 
                 lat: 48.7897, 
                 lon: 2.3923 
             };
@@ -1699,42 +1701,189 @@
             let currentPaletteTransportId = null;
             let paletteResolve = null;
 
-            // ==================== 导航函数 ====================
-           window.openGoogleMaps = async function(address) {
+// ==================== 智能导航（优先App，无App则网页版） ====================
+window.openNavigation = function(address) {
     if (!address) return;
     
     let cleanAddress = address.trim();
     
-    // 添加法国后缀
-    if (!cleanAddress.toLowerCase().includes('france') && 
-        !cleanAddress.toLowerCase().includes('france')) {
-        cleanAddress = cleanAddress + ', France';
+    // 创建自定义弹窗
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(4px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            border-radius: 32px;
+            width: 320px;
+            max-width: 85%;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: fadeIn 0.2s ease-out;
+        ">
+            <div style="font-size: 48px; margin-bottom: 12px;">🗺️</div>
+            <h3 style="color: #1d4a72; margin-bottom: 8px; font-size: 1.2rem;">Navigation</h3>
+            <div style="background: #f5f5f5; border-radius: 16px; padding: 10px 12px; margin: 16px 0; font-size: 0.85rem; color: #666; word-break: break-all; text-align: left;">
+                📍 <strong>Adresse:</strong><br>
+                ${escapeHtmlSimple(cleanAddress)}
+            </div>
+            <p style="color: #999; font-size: 0.75rem; margin-bottom: 16px;">L'application s'ouvrira si installée, sinon version web</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="navGoogleBtn" style="
+                    background: #4285f4;
+                    color: white;
+                    border: none;
+                    padding: 14px 20px;
+                    border-radius: 40px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    transition: transform 0.1s;
+                ">
+                    <span>📍</span> Google Maps
+                </button>
+                
+                <button id="navWazeBtn" style="
+                    background: #33ccff;
+                    color: white;
+                    border: none;
+                    padding: 14px 20px;
+                    border-radius: 40px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    transition: transform 0.1s;
+                ">
+                    <span>🧭</span> Waze
+                </button>
+                
+                <button id="navCancelBtn" style="
+                    background: #f0f0f0;
+                    color: #666;
+                    border: none;
+                    padding: 12px 20px;
+                    border-radius: 40px;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    margin-top: 8px;
+                ">
+                    Annuler
+                </button>
+            </div>
+        </div>
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        </style>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    function escapeHtmlSimple(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
     
-    // 尝试先地理编码获取精确坐标（可选，更精确）
-    try {
-        // 使用 Nominatim 获取精确坐标
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanAddress)}&limit=1&countrycodes=fr`);
-        const data = await response.json();
+    // ========== Google Maps 智能打开 ==========
+    const googleBtn = modal.querySelector('#navGoogleBtn');
+    googleBtn.onclick = () => {
+        // Google Maps App 协议
+        const googleAppUrl = `comgooglemaps://?q=${encodeURIComponent(cleanAddress)}&directionsmode=driving`;
+        const googleWebUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddress)}`;
         
-        if (data && data.length > 0) {
-            // 如果有精确坐标，使用坐标导航（最精确）
-            const lat = data[0].lat;
-            const lon = data[0].lon;
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-            window.open(mapsUrl, '_blank');
-            return;
+        // 检测设备
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        
+        if (isIOS) {
+            // iOS: 先尝试打开 App
+            window.location.href = googleAppUrl;
+            // 如果 2 秒后还在当前页面，说明没装 App，跳转网页版
+            setTimeout(function() {
+                window.open(googleWebUrl, '_blank');
+            }, 2000);
+        } else if (isAndroid) {
+            // Android: 用 intent 协议
+            const intentUrl = `intent://maps/search/?q=${encodeURIComponent(cleanAddress)}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            window.location.href = intentUrl;
+            setTimeout(function() {
+                window.open(googleWebUrl, '_blank');
+            }, 2000);
+        } else {
+            // 电脑或其他设备：直接打开网页版
+            window.open(googleWebUrl, '_blank');
         }
-    } catch(e) {
-        console.log('地理编码失败，使用地址搜索');
-    }
+        
+        document.body.removeChild(modal);
+    };
     
-    // 降级：使用地址搜索
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddress)}`;
-    window.open(mapsUrl, '_blank');
+    // ========== Waze 智能打开 ==========
+    const wazeBtn = modal.querySelector('#navWazeBtn');
+    wazeBtn.onclick = () => {
+        // Waze App 协议
+        const wazeAppUrl = `waze://?q=${encodeURIComponent(cleanAddress)}&navigate=yes`;
+        const wazeWebUrl = `https://www.waze.com/ul?q=${encodeURIComponent(cleanAddress)}&navigate=yes`;
+        
+        // 检测设备
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        
+        if (isIOS || isAndroid) {
+            // 手机端：先尝试打开 App
+            window.location.href = wazeAppUrl;
+            // 如果 2 秒后还在当前页面，说明没装 Waze，跳转网页版
+            setTimeout(function() {
+                window.open(wazeWebUrl, '_blank');
+            }, 2000);
+        } else {
+            // 电脑：直接打开网页版
+            window.open(wazeWebUrl, '_blank');
+        }
+        
+        document.body.removeChild(modal);
+    };
+    
+    const cancelBtn = modal.querySelector('#navCancelBtn');
+    cancelBtn.onclick = () => {
+        document.body.removeChild(modal);
+    };
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    };
 };
-
-            // ==================== DOM 元素 ====================
+// ==================== DOM 元素 ====================
             const loginOverlay = document.getElementById('loginOverlay');
             const appContainer = document.getElementById('app');
             const loginUsername = document.getElementById('loginUsername');
@@ -2189,90 +2338,58 @@
             closeViewSignatureBtn.addEventListener('click', () => {
                 viewSignatureModal.style.display = 'none';
             });
+         
 
-            // ==================== 智能地址识别 ====================
+
             async function geocodeAddress(address) {
                 try {
-                    console.log('正在地理编码地址:', address);
+                    if (!address) return null;
                     
                     let searchAddress = address.trim();
                     
-                    // 法国主要城市列表
-                    const frenchCities = [
-                        'paris', 'lyon', 'marseille', 'lille', 'strasbourg', 'bordeaux', 
-                        'toulouse', 'nice', 'nantes', 'creil', 'saint-maximin', 'vitry',
-                        'montpellier', 'rennes', 'reims', 'saint-denis', 'versailles',
-                        'rouen', 'caen', 'angers', 'limoges', 'clermont-ferrand'
-                    ];
-                    
-                    // 处理明显的非法国地址
-                    const nonFrenchIndicators = ['bangkok', 'london', 'berlin', 'new york', 'tokyo'];
-                    const hasNonFrench = nonFrenchIndicators.some(indicator => 
-                        searchAddress.toLowerCase().includes(indicator)
-                    );
-                    
-                    if (hasNonFrench) {
-                        console.log('检测到非法国地址，尝试提取法国地名');
-                        const words = searchAddress.toLowerCase().split(/[\s,]+/);
-                        const foundFrenchCity = words.find(word => 
-                            frenchCities.some(city => word.includes(city) || city.includes(word))
-                        );
-                        
-                        if (foundFrenchCity) {
-                            searchAddress = foundFrenchCity + ', France';
-                            console.log('提取到法国城市:', searchAddress);
-                        } else {
-                            searchAddress = 'France';
-                        }
-                    }
-                    
-                    // 处理纯邮编
+                    // 如果是纯数字邮编（5位数字）
                     if (/^\d{5}$/.test(searchAddress)) {
                         searchAddress = searchAddress + ', France';
-                        console.log('邮编转地址:', searchAddress);
                     }
                     
-                    // 确保包含法国
+                    // 确保包含 France
                     if (!searchAddress.toLowerCase().includes('france')) {
                         searchAddress = searchAddress + ', France';
                     }
                     
-                    console.log('最终搜索地址:', searchAddress);
+                    console.log('地理编码地址:', searchAddress);
                     
-                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=5&countrycodes=fr&addressdetails=1`;
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=3&countrycodes=fr&addressdetails=1&limit=1`;
                     
                     const response = await fetch(url, {
-                        headers: {
-                            'User-Agent': 'DeliveryApp/1.0'
-                        }
+                        headers: { 'User-Agent': 'DeliveryApp/1.0' }
                     });
-                    
                     const data = await response.json();
                     
                     if (data && data.length > 0) {
-                        // 验证结果在法国
-                        const validResults = data.filter(result => {
-                            if (result.address && result.address.country_code === 'fr') return true;
-                            if (result.display_name && result.display_name.toLowerCase().includes('france')) return true;
-                            return false;
-                        });
-                        
-                        if (validResults.length === 0) {
-                            console.log('没有找到法国境内的结果');
-                            return null;
-                        }
-                        
-                        const bestMatch = validResults[0];
-                        console.log('地理编码成功:', bestMatch);
-                        
+                        const result = data[0];
                         return {
-                            lat: parseFloat(bestMatch.lat),
-                            lon: parseFloat(bestMatch.lon),
-                            display_name: bestMatch.display_name
+                            lat: parseFloat(result.lat),
+                            lon: parseFloat(result.lon),
+                            display_name: result.display_name
                         };
                     }
                     
-                    console.log('地址未找到:', address);
+                    // 降级：尝试去掉 France 再搜一次
+                    const fallbackAddress = address.trim();
+                    const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackAddress)}&limit=1`;
+                    const fallbackResp = await fetch(fallbackUrl, { headers: { 'User-Agent': 'DeliveryApp/1.0' } });
+                    const fallbackData = await fallbackResp.json();
+                    
+                    if (fallbackData && fallbackData.length > 0) {
+                        return {
+                            lat: parseFloat(fallbackData[0].lat),
+                            lon: parseFloat(fallbackData[0].lon),
+                            display_name: fallbackData[0].display_name
+                        };
+                    }
+                    
+                    console.warn('地址未找到:', address);
                     return null;
                     
                 } catch (error) {
@@ -2280,7 +2397,6 @@
                     return null;
                 }
             }
-
             // ==================== 批量地理编码 ====================
             async function geocodeAllOrders() {
                 const confirmed = await showConfirm('Géocodage', 'Géocoder toutes les adresses non géolocalisées ?');
@@ -2585,12 +2701,49 @@
                 }
                 
                 // 生成三种语言的短信内容
-                const frenchText = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeText}.\nVotre livreur: ${chauffeurName} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
-                
-                const englishText = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeText}.\nYour driver: ${chauffeurName} 📞 ${chauffeurPhone || 'Not available'}\nPlease keep your phone accessible.`;
-                
-                const chineseText = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeText} 配送。\n您的司机: ${chauffeurName} 📞 ${chauffeurPhone || '暂无电话'}\n请保持电话畅通。`;
-                
+             const frenchText = `📦 Notification Yida – Livraison aujourd'hui
+Bonjour ${order.customer_name},
+
+Nous vous informons que votre commande sera livrée aujourd'hui ${timeText}.
+
+Livreur : ${chauffeurName}
+Téléphone : ${chauffeurPhone || 'Non disponible'}
+
+En cas de changement, merci de contacter le livreur.
+Merci de rester joignable.
+Nous vous souhaitons une excellente journée.
+
+Cordialement,
+Yida`;
+
+const englishText = `📦 Yida Delivery Notification – Scheduled for today
+Dear ${order.customer_name},
+
+We would like to inform you that your order is scheduled for delivery today ${timeText}.
+
+Driver: ${chauffeurName}
+Phone: ${chauffeurPhone || 'Not available'}
+
+In case of any changes, please contact the driver.
+Please keep your phone accessible.
+We wish you a pleasant day.
+
+Kind regards,
+Yida`;
+
+const chineseText = `📦 Yida配送通知 – 今日送达
+尊敬的 ${order.customer_name}，
+
+您好！您的订单预计于今天 ${timeText} 送达。
+
+配送员：${chauffeurName}
+联系电话：${chauffeurPhone || '暂无电话'}
+
+如有变动，请及时联系配送员。
+请保持电话畅通。
+祝您工作顺利，生活愉快！
+
+Yida`; 
                 // 合并三种语言，用分隔线分开
                 return `${frenchText}\n\n---\n\n${englishText}\n\n---\n\n${chineseText}`;
             }
@@ -2601,11 +2754,11 @@
                     console.log('初始化 Leaflet 地图...');
                     try {
                         map = L.map('map').setView([START_POINT.lat, START_POINT.lon], 11);
-                        
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors',
-                            maxZoom: 19
-                        }).addTo(map);
+                       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CartoDB',
+                        subdomains: 'abcd',
+                        maxZoom: 19
+                    }).addTo(map);
                         
                         console.log('Leaflet 地图初始化成功');
                     } catch (e) {
@@ -3085,6 +3238,12 @@
                 
                 loadingMessage.style.display = 'none';
             }
+            
+
+            
+
+
+
 
             function renderOrdersGroupedByDriver(orders) {
                 const byDriver = {};
@@ -3111,226 +3270,218 @@
                 ordersByDriver.innerHTML = html || '<p>Aucune commande</p>';
             }
 
-            function renderOrderItem(order) {
-                const timeDisplay = formatTimeRequirement(order);
-                const statusLabels = {
-                    'en_attente': 'En attente',
-                    'prepare': 'Préparé',
-                    'en_cours': 'En cours',
-                    'livre': 'Livré'
-                };
-                
-                let actions = '';
-                let smsButton = '';
-                
-                // ========== 导航按钮（所有人可见，只要有地址） ==========
-              let navigateButton = '';
-                if (order.destination) {
-                    // 使用优化后的导航函数
-                    navigateButton = `<button class="btn-navigate" onclick="openGoogleMaps('${escapeHtml(order.destination).replace(/'/g, "\\'")}')">📍 Naviguer</button>`;
+          function renderOrderItem(order) {
+    const timeDisplay = formatTimeRequirement(order);
+    const statusLabels = {
+        'en_attente': 'En attente',
+        'prepare': 'Préparé',
+        'en_cours': 'En cours',
+        'livre': 'Livré'
+    };
+    
+    let actions = '';
+    let smsButton = '';
+    
+    // ========== 导航按钮（所有人可见，只要有地址） ==========
+    let navigateButton = '';
+    if (order.destination) {
+        // 转义地址中的单引号
+        const escapedAddress = order.destination.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        navigateButton = `<button class="btn-navigate" onclick="openNavigation('${escapedAddress}')">📍 Naviguer</button>`;
+    }
+    
+    // ========== 1. 管理员权限（全部权限） ==========
+    if (isAdmin()) {
+        // EN_ATTENTE 状态：可以准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+        
+        // PREPARE 状态：可以出发
+        if (order.status === ORDER_STATUS.PREPARE) {
+            actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
+        }
+        
+        // EN_COURS 状态：可以送达
+        if (order.status === ORDER_STATUS.EN_COURS) {
+            actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
+        }
+        
+        // 所有状态都可以编辑和删除
+        actions += `
+            <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
+            <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
+        `;
+    }
+    
+    // ========== 2. 经理/秘书权限（原有权限 + 短信） ==========
+    else if (isManager() || isSecretaire()) {
+        // EN_ATTENTE 状态：可以准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+        
+        // PREPARE 状态：不能出发，但可以发短信（秘书/经理）
+        if (order.status === ORDER_STATUS.PREPARE && order.phone) {
+            const driverPhone = window.driverPhoneMap?.[order.driver] || '';
+            
+            let timeTextForSms = '';
+            if (order.time_req) {
+                if (order.time_req.type === 'fixed') {
+                    timeTextForSms = `à ${order.time_req.value}`;
+                } else if (order.time_req.type === 'before') {
+                    timeTextForSms = `avant ${order.time_req.value}`;
+                } else if (order.time_req.type === 'range') {
+                    timeTextForSms = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
+                } else {
+                    timeTextForSms = `entre 9h et 18h`;
                 }
+            } else {
+                timeTextForSms = `entre 9h et 18h`;
+            }
+            
+            const frenchSms = `📦 Yida Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeTextForSms}.\nLivreur : ${order.driver} 📞 ${driverPhone || 'Non disponible'}\nEn cas de changement, merci de contacter le livreur.`;
+            const englishSms = `📦 Yida Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeTextForSms}.\nDriver: ${order.driver} 📞 ${driverPhone || 'Not available'}\nIn case of any changes, please contact the driver.`;
+            const chineseSms = `📦 Yida配送 今日送达\n您好 ${order.customer_name}，您的订单将于今天 ${timeTextForSms} 送达。\n配送员：${order.driver} 📞 ${driverPhone || '暂无电话'}\n如有变动，请及时联系配送员。`;
+            
+            const smsText = `${frenchSms}\n\n---\n\n${englishSms}\n\n---\n\n${chineseSms}`;
+            const encodedSms = encodeURIComponent(smsText);
+            const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
+            
+            smsButton = `
+                <div class="sms-btn-container">
+                    <a href="sms:${phoneNumber}?body=${encodedSms}" 
+                       class="btn-validate" 
+                       style="background:#4CAF50; text-decoration:none; display:inline-block;"
+                       target="_blank">
+                        📱 SMS client
+                    </a>
+                </div>
+            `;
+        }
+        
+        // EN_COURS 状态：可以送达
+        if (order.status === ORDER_STATUS.EN_COURS) {
+            actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
+        }
+        
+        // 可以编辑和删除
+        actions += `
+            <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
+            <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
+        `;
+    }
+    
+    // ========== 3. 仓库主管权限 ==========
+    else if (isResponsable()) {
+        // 仓库主管可以在 EN_ATTENTE 状态准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+    }
+    
+    // ========== 4. 配货员权限 ==========
+    else if (isPreparateur()) {
+        // 配货员可以在 EN_ATTENTE 状态准备
+        if (order.status === ORDER_STATUS.EN_ATTENTE) {
+            actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
+        }
+    }
+    
+    // ========== 5. 司机权限 ==========
+    else if (isChauffeur()) {
+        // 只能看到自己负责的订单
+        if (order.driver === currentUser) {
+            // PREPARE 状态：司机可以出发，也可以发短信
+            if (order.status === ORDER_STATUS.PREPARE) {
+                actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
                 
-                // ========== 1. 管理员权限（全部权限） ==========
-                if (isAdmin()) {
-                    // EN_ATTENTE 状态：可以准备
-                    if (order.status === ORDER_STATUS.EN_ATTENTE) {
-                        actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
-                    }
+                // 如果有客户电话，显示短信按钮
+                if (order.phone) {
+                    const chauffeurPhone = window.chauffeurPhone || '';
                     
-                    // PREPARE 状态：可以出发
-                    if (order.status === ORDER_STATUS.PREPARE) {
-                        actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
-                    }
-                    
-                    // EN_COURS 状态：可以送达
-                    if (order.status === ORDER_STATUS.EN_COURS) {
-                        actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
-                    }
-                    
-                    // 所有状态都可以编辑和删除
-                    actions += `
-                        <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
-                        <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
-                    `;
-                }
-                
-                // ========== 2. 经理/秘书权限（原有权限 + 短信） ==========
-                else if (isManager() || isSecretaire()) {
-                    // EN_ATTENTE 状态：可以准备
-                    if (order.status === ORDER_STATUS.EN_ATTENTE) {
-                        actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
-                    }
-                    
-                    // PREPARE 状态：不能出发，但可以发短信（秘书/经理）
-                    if (order.status === ORDER_STATUS.PREPARE && order.phone) {
-                        const driverPhone = window.driverPhoneMap?.[order.driver] || '';
-                        
-                        let timeTextForSms = '';
-                        if (order.time_req) {
-                            if (order.time_req.type === 'fixed') {
-                                timeTextForSms = `à ${order.time_req.value}`;
-                            } else if (order.time_req.type === 'before') {
-                                timeTextForSms = `avant ${order.time_req.value}`;
-                            } else if (order.time_req.type === 'range') {
-                                timeTextForSms = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
-                            } else {
-                                timeTextForSms = `entre 9h et 18h`;
-                            }
+                    let timeTextForSms = '';
+                    if (order.time_req) {
+                        if (order.time_req.type === 'fixed') {
+                            timeTextForSms = `à ${order.time_req.value}`;
+                        } else if (order.time_req.type === 'before') {
+                            timeTextForSms = `avant ${order.time_req.value}`;
+                        } else if (order.time_req.type === 'range') {
+                            timeTextForSms = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
                         } else {
                             timeTextForSms = `entre 9h et 18h`;
                         }
-                        
-                        // 生成三种语言的短信内容
-                        const frenchSms = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeTextForSms}.\nVotre livreur: ${order.driver} 📞 ${driverPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
-                        const englishSms = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeTextForSms}.\nYour driver: ${order.driver} 📞 ${driverPhone || 'Not available'}\nPlease keep your phone accessible.`;
-                        const chineseSms = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeTextForSms} 配送。\n您的司机: ${order.driver} 📞 ${driverPhone || '暂无电话'}\n请保持电话畅通。`;
-                        const smsText = `${frenchSms}\n\n---\n\n${englishSms}\n\n---\n\n${chineseSms}`;
-                        const encodedSms = encodeURIComponent(smsText);
-                        const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
-                        
-                        smsButton = `
-                            <div class="sms-btn-container">
-                                <a href="sms:${phoneNumber}?body=${encodedSms}" 
-                                   class="btn-validate" 
-                                   style="background:#4CAF50; text-decoration:none; display:inline-block;"
-                                   target="_blank">
-                                    📱 SMS client
-                                </a>
-                            </div>
-                        `;
+                    } else {
+                        timeTextForSms = `entre 9h et 18h`;
                     }
                     
-                    // EN_COURS 状态：可以送达
-                    if (order.status === ORDER_STATUS.EN_COURS) {
-                        actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
-                    }
+                    const frenchSms = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeTextForSms}.\nVotre livreur: ${currentUser} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
+                    const englishSms = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeTextForSms}.\nYour driver: ${currentUser} 📞 ${chauffeurPhone || 'Not available'}\nPlease keep your phone accessible.`;
+                    const chineseSms = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeTextForSms} 配送。\n您的司机: ${currentUser} 📞 ${chauffeurPhone || '暂无电话'}\n请保持电话畅通。`;
+                    const smsText = `${frenchSms}\n\n---\n\n${englishSms}\n\n---\n\n${chineseSms}`;
+                    const encodedSms = encodeURIComponent(smsText);
+                    const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
                     
-                    // 可以编辑和删除
-                    actions += `
-                        <button class="btn-edit" onclick="editOrder('${order.id}')">✏️</button>
-                        <button class="btn-delete" onclick="deleteOrder('${order.id}')">🗑️</button>
+                    smsButton = `
+                        <div class="sms-btn-container">
+                            <a href="sms:${phoneNumber}?body=${encodedSms}" 
+                               class="btn-validate" 
+                               style="background:#4CAF50; text-decoration:none; display:inline-block;"
+                               target="_blank">
+                                📱 SMS client
+                            </a>
+                        </div>
                     `;
                 }
-                
-                // ========== 3. 仓库主管权限 ==========
-                else if (isResponsable()) {
-                    // 仓库主管可以在 EN_ATTENTE 状态准备
-                    if (order.status === ORDER_STATUS.EN_ATTENTE) {
-                        actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
-                    }
-                    // 其他状态没有操作按钮，但可以查看签名
-                }
-                
-                // ========== 4. 配货员权限 ==========
-                else if (isPreparateur()) {
-                    // 配货员可以在 EN_ATTENTE 状态准备
-                    if (order.status === ORDER_STATUS.EN_ATTENTE) {
-                        actions += `<button class="btn-validate" onclick="prepareOrder('${order.id}')">✅ Préparer</button>`;
-                    }
-                    // 其他状态没有操作按钮
-                }
-                
-                // ========== 5. 司机权限 ==========
-                else if (isChauffeur()) {
-                    // 只能看到自己负责的订单
-                    if (order.driver === currentUser) {
-                        
-                        // 司机不能准备，只能等配货员/主管准备
-                        
-                        // PREPARE 状态：司机可以出发，也可以发短信
-                        if (order.status === ORDER_STATUS.PREPARE) {
-                            actions += `<button class="btn-validate" onclick="departOrder('${order.id}')">🚚 Démarrer</button>`;
-                            
-                            // 如果有客户电话，显示短信按钮
-                            if (order.phone) {
-                                const chauffeurPhone = window.chauffeurPhone || '';
-                                
-                                let timeTextForSms = '';
-                                if (order.time_req) {
-                                    if (order.time_req.type === 'fixed') {
-                                        timeTextForSms = `à ${order.time_req.value}`;
-                                    } else if (order.time_req.type === 'before') {
-                                        timeTextForSms = `avant ${order.time_req.value}`;
-                                    } else if (order.time_req.type === 'range') {
-                                        timeTextForSms = `entre ${order.time_req.value.start} et ${order.time_req.value.end}`;
-                                    } else {
-                                        timeTextForSms = `entre 9h et 18h`;
-                                    }
-                                } else {
-                                    timeTextForSms = `entre 9h et 18h`;
-                                }
-                                
-                                // 生成三种语言的短信内容
-                                const frenchSms = `📦 [yida的订单] Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeTextForSms}.\nVotre livreur: ${currentUser} 📞 ${chauffeurPhone || 'Non disponible'}\nMerci de garder votre téléphone accessible.`;
-                                const englishSms = `📦 [yida's order] Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeTextForSms}.\nYour driver: ${currentUser} 📞 ${chauffeurPhone || 'Not available'}\nPlease keep your phone accessible.`;
-                                const chineseSms = `📦 [yida的订单] 今日配送\n您好 ${order.customer_name}，您的订单将于今天 ${timeTextForSms} 配送。\n您的司机: ${currentUser} 📞 ${chauffeurPhone || '暂无电话'}\n请保持电话畅通。`;
-                                const smsText = `${frenchSms}\n\n---\n\n${englishSms}\n\n---\n\n${chineseSms}`;
-                                const encodedSms = encodeURIComponent(smsText);
-                                const phoneNumber = order.phone.startsWith('0') ? order.phone : '0' + order.phone;
-                                
-                                smsButton = `
-                                    <div class="sms-btn-container">
-                                        <a href="sms:${phoneNumber}?body=${encodedSms}" 
-                                           class="btn-validate" 
-                                           style="background:#4CAF50; text-decoration:none; display:inline-block;"
-                                           target="_blank">
-                                            📱 SMS client
-                                        </a>
-                                    </div>
-                                `;
-                            }
-                        }
-                        
-                        // EN_COURS 状态：司机可以送达
-                        else if (order.status === ORDER_STATUS.EN_COURS) {
-                            actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
-                        }
-                        
-                        // LIVRE 状态：检查是否所有订单都已完成，显示返回按钮
-                        else if (order.status === ORDER_STATUS.LIVRE) {
-                            const hasPendingOrders = allNonDeliveredOrders && allNonDeliveredOrders.length > 0;
-                            
-                            // 只在最后一单显示返回按钮
-                            if (!hasPendingOrders) {
-                                actions += `<button class="btn-validate" style="background:#2196f3;" onclick="returnToDepot()">🏁 Retour dépôt</button>`;
-                            }
-                        }
-                    }
-                }
-                
-                // ========== 6. 签名查看按钮（对多种角色开放） ==========
-                let signatureButton = '';
-                if (order.signature && (isAdmin() || isManager() || isSecretaire() || isResponsable() || isChauffeur())) {
-                    signatureButton = `<button class="view-signature-btn" onclick="viewSignature('${order.signature}')">📝 Voir signature</button>`;
-                }
-                
-                return `
-                    <div class="order-card ${order.status}">
-                        <div class="item-header">
-                            <span class="customer-name">${escapeHtml(order.customer_name)}</span>
-                            <span class="status-badge ${order.status}">${statusLabels[order.status]}</span>
-                        </div>
-                        <div class="order-details">
-                            <div>📍 ${escapeHtml(order.destination)}</div>
-                            <div>⏰ ${timeDisplay}</div>
-                            ${order.phone ? `<div>📱 ${escapeHtml(order.phone)}</div>` : ''}
-                        </div>
-                        <div class="order-meta">
-                            <span>📅 ${escapeHtml(order.created_by)} ${formatDateTime(order.created_at)}</span>
-                            ${order.prepared_at ? `<span>📦 ${escapeHtml(order.prepared_by)} ${formatDateTime(order.prepared_at)}</span>` : ''}
-                            ${order.driver_departure_at ? `<span>🚚 ${formatDateTime(order.driver_departure_at)}</span>` : ''}
-                            ${order.delivered_at ? `<span>✅ ${formatDateTime(order.delivered_at)}</span>` : ''}
-                        </div>
-                        <div class="order-actions">
-                            ${navigateButton}
-                            ${actions}
-                            ${smsButton}
-                            ${signatureButton}
-                        </div>
-                    </div>
-                `;
             }
-
+            
+            // EN_COURS 状态：司机可以送达
+            else if (order.status === ORDER_STATUS.EN_COURS) {
+                actions += `<button class="btn-validate" onclick="openSignatureModal('${order.id}')">📝 Livrer</button>`;
+            }
+            
+            // LIVRE 状态：检查是否所有订单都已完成，显示返回按钮
+            else if (order.status === ORDER_STATUS.LIVRE) {
+                const hasPendingOrders = allNonDeliveredOrders && allNonDeliveredOrders.length > 0;
+                if (!hasPendingOrders) {
+                    actions += `<button class="btn-validate" style="background:#2196f3;" onclick="returnToDepot()">🏁 Retour dépôt</button>`;
+                }
+            }
+        }
+    }
+    
+    // ========== 6. 签名查看按钮（对多种角色开放） ==========
+    let signatureButton = '';
+    if (order.signature && (isAdmin() || isManager() || isSecretaire() || isResponsable() || isChauffeur())) {
+        signatureButton = `<button class="view-signature-btn" onclick="viewSignature('${order.signature}')">📝 Voir signature</button>`;
+    }
+    
+    return `
+        <div class="order-card ${order.status}">
+            <div class="item-header">
+                <span class="customer-name">${escapeHtml(order.customer_name)}</span>
+                <span class="status-badge ${order.status}">${statusLabels[order.status]}</span>
+            </div>
+            <div class="order-details">
+                <div>📍 ${escapeHtml(order.destination)}</div>
+                <div>⏰ ${timeDisplay}</div>
+                ${order.phone ? `<div>📱 ${escapeHtml(order.phone)}</div>` : ''}
+            </div>
+            <div class="order-meta">
+                <span>📅 ${escapeHtml(order.created_by)} ${formatDateTime(order.created_at)}</span>
+                ${order.prepared_at ? `<span>📦 ${escapeHtml(order.prepared_by)} ${formatDateTime(order.prepared_at)}</span>` : ''}
+                ${order.driver_departure_at ? `<span>🚚 ${formatDateTime(order.driver_departure_at)}</span>` : ''}
+                ${order.delivered_at ? `<span>✅ ${formatDateTime(order.delivered_at)}</span>` : ''}
+            </div>
+            <div class="order-actions">
+                ${navigateButton}
+                ${actions}
+                ${smsButton}
+                ${signatureButton}
+            </div>
+        </div>
+    `;
+}
             addOrderBtn.addEventListener('click', async () => {
                 if (!hasFullAccess()) return;
                 
