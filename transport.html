@@ -3340,9 +3340,29 @@ Yida`;
                 timeTextForSms = `entre 9h et 18h`;
             }
             
-            const frenchSms = `📦 Yida Livraison aujourd'hui\nBonjour ${order.customer_name}, votre commande sera livrée aujourd'hui ${timeTextForSms}.\nLivreur : ${order.driver} 📞 ${driverPhone || 'Non disponible'}\nEn cas de changement, merci de contacter le livreur.`;
-            const englishSms = `📦 Yida Delivery today\nHello ${order.customer_name}, your order will be delivered today ${timeTextForSms}.\nDriver: ${order.driver} 📞 ${driverPhone || 'Not available'}\nIn case of any changes, please contact the driver.`;
-            const chineseSms = `📦 Yida配送 今日送达\n您好 ${order.customer_name}，您的订单将于今天 ${timeTextForSms} 送达。\n配送员：${order.driver} 📞 ${driverPhone || '暂无电话'}\n如有变动，请及时联系配送员。`;
+          const frenchSms = `📦 Notification Yida – Livraison aujourd'hui
+Bonjour ${order.customer_name},
+
+Nous vous informons que votre commande sera livrée aujourd'hui ${timeTextForSms}.
+Livreur : ${order.driver} 📞 ${driverPhone || 'Non disponible'}
+
+En cas de changement, merci de contacter le livreur.`;
+
+const englishSms = `📦 Yida Delivery Notification – Today
+Dear ${order.customer_name},
+
+We would like to inform you that your order is scheduled for delivery today ${timeTextForSms}.
+Driver: ${order.driver} 📞 ${driverPhone || 'Not available'}
+
+In case of any changes, please contact the driver.`;
+
+const chineseSms = `📦 Yida配送通知 – 今日送达
+尊敬的 ${order.customer_name}，
+
+您好！您的订单预计于今天 ${timeTextForSms} 送达。
+配送员：${order.driver} 📞 ${driverPhone || '暂无电话'}
+
+如有变动，请及时联系配送员。`;
             
             const smsText = `${frenchSms}\n\n---\n\n${englishSms}\n\n---\n\n${chineseSms}`;
             const encodedSms = encodeURIComponent(smsText);
