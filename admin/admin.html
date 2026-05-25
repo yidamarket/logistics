@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>Yida Food · Administration</title>
+    <link rel="stylesheet" href="admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../config.js"></script>
+    <script src="admin.js" defer></script>
+</head>
+<body>
+    <!-- 移动端汉堡菜单按钮 -->
+    <button class="menu-toggle" id="menuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="admin-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">👑</div>
+                    <div class="logo-text">Yida Food</div>
+                    <div class="logo-badge">Admin</div>
+                </div>
+                <button class="sidebar-close" id="sidebarClose">&times;</button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="orders">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text" id="navOrdersText">Commandes</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="clients">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text" id="navClientsText">Clients</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="requests">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text" id="navRequestsText">Demandes</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="promotions">
+                    <span class="nav-icon">🎁</span>
+                    <span class="nav-text" id="navPromotionsText">Promotions</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="points">
+                    <span class="nav-icon">⭐</span>
+                    <span class="nav-text" id="navPointsText">Points</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="assign" style="position: relative;">
+                    <span class="nav-icon">🚚</span>
+                    <span class="nav-text" id="navAssignText">Assigner</span>
+                    <span id="assignNavBadge" class="nav-badge" style="display:none;">0</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <span class="user-name" id="userName"></span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="logout-btn" id="logoutBtn">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text" id="logoutText">Déconnexion</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <div class="page-header">
+                    <h1 class="page-title" id="pageTitle">Administration</h1>
+                </div>
+                <div class="lang-switch">
+                    <button class="lang-btn" data-lang="fr">FR</button>
+                    <button class="lang-btn" data-lang="zh">中文</button>
+                </div>
+            </div>
+
+            <!-- ========== 订单管理面板 ========== -->
+            <div id="ordersPanel" class="admin-panel active">
+                <!-- 统计卡片 -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div>
+                            <span class="stat-value" id="pendingCount">0</span>
+                            <span class="stat-label" id="pendingLabel">En attente</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div>
+                            <span class="stat-value" id="confirmedCount">0</span>
+                            <span class="stat-label" id="confirmedLabel">Confirmée</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🚚</div>
+                        <div>
+                            <span class="stat-value" id="deliveredCount">0</span>
+                            <span class="stat-label" id="deliveredLabel">Livrée</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div>
+                            <span class="stat-value" id="totalRevenue">0€</span>
+                            <span class="stat-label" id="revenueLabel">Chiffre d'affaires</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 筛选栏 -->
+                <div class="filter-bar">
+                   <div class="filter-tabs">
+                        <button class="filter-tab active" data-status="all" id="filterAll">Toutes</button>
+                        <div style="position: relative; display: inline-block;">
+                            <button class="filter-tab" data-status="pending" id="filterPending">📝 En attente</button>
+                            <span id="pendingCountBadge" class="filter-badge" style="display:none;">0</span>
+                        </div>
+                        <button class="filter-tab" data-status="confirmed" id="filterConfirmed">✅ Confirmée</button>
+                        <button class="filter-tab" data-status="delivered" id="filterDelivered">🚚 Livrée</button>
+                        <button class="filter-tab" data-status="cancelled" id="filterCancelled">❌ Annulée</button>
+                        <button class="filter-tab" data-status="unpaid" id="filterUnpaid">💰 Non payée</button>
+                    </div>
+                    <button class="export-btn" id="exportBtn">📎 Exporter CSV</button>
+                </div>
+                
+                <!-- 移动端订单列表（卡片式） -->
+                <div class="orders-list" id="mobileOrdersList"></div>
+                
+                <!-- 桌面端订单表格 -->
+                <div class="table-container desktop-only">
+                    <table class="data-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th id="thOrderNumber">N° commande</th>
+                                <th id="thClient">Client</th>
+                                <th id="thTotal">Total</th>
+                                <th id="thDate">Date</th>
+                                <th id="thDelivery">Livraison</th>
+                                <th id="thPayment">Paiement</th>
+                                <th id="thStatus">Statut</th>
+                                <th id="thActions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr><td colspan="8" class="loading-cell">Chargement...<\/td><\/tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ========== 客户管理面板 ========== -->
+            <div id="clientsPanel" class="admin-panel">
+                <div class="stats-grid-mini">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div>
+                            <span class="stat-value" id="totalClients">0</span>
+                            <span class="stat-label" id="totalClientsLabel">Total clients</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div>
+                            <span class="stat-value" id="verifiedClients">0</span>
+                            <span class="stat-label" id="verifiedLabel">KBIS vérifié</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏳</div>
+                        <div>
+                            <span class="stat-value" id="pendingVerify">0</span>
+                            <span class="stat-label" id="pendingVerifyLabel">En attente</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 移动端客户卡片列表 -->
+                <div class="mobile-list" id="mobileClientsList"></div>
+                
+                <div class="table-container">
+                    <table class="data-table" id="clientsTable">
+                        <thead>
+                            <tr>
+                                <th id="thCompany">Entreprise</th>
+                                <th id="thEmail">Email</th>
+                                <th id="thPhone">Téléphone</th>
+                                <th id="thKbis">KBIS</th>
+                                <th id="thKbisStatus">Statut KBIS</th>
+                                <th id="thAccountStatus">Statut</th>
+                                <th id="thPoints">Points</th>
+                                <th id="thDebt">Dette</th>
+                                <th id="thLastPayment">Dernier paiement</th>
+                                <th id="thClientActions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody">
+                            <tr><td colspan="8" class="loading-cell">Chargement...<\/td><\/tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ========== 修改请求管理面板 ========== -->
+            <div id="requestsPanel" class="admin-panel">
+                <div class="panel-header">
+                    <h2 id="requestsPanelTitle">📝 Demandes de modification</h2>
+                </div>
+                
+                <!-- 移动端请求卡片列表 -->
+                <div class="mobile-list" id="mobileRequestsList"></div>
+                
+                <div class="table-container">
+                    <table class="data-table" id="requestsTable">
+                        <thead>
+                            <tr>
+                                <th id="reqClient">Client</th>
+                                <th id="reqField">Champ</th>
+                                <th id="reqOldValue">Ancienne valeur</th>
+                                <th id="reqNewValue">Nouvelle valeur</th>
+                                <th id="reqDate">Date</th>
+                                <th id="reqActions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTableBody">
+                            <tr><td colspan="6" class="loading-cell">Chargement...<\/td><\/tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ========== 优惠活动管理面板 ========== -->
+            <div id="promotionsPanel" class="admin-panel">
+                <div class="panel-header">
+                    <h2 id="promotionsPanelTitle">🎁 Gestion des promotions</h2>
+                    <button class="btn-add" id="addPromotionBtn">+ Ajouter</button>
+                </div>
+                
+                <!-- 手机端卡片列表 -->
+                <div class="promotions-list" id="mobilePromotionsList"></div>
+                
+                <!-- 桌面端表格 -->
+                <div class="table-container desktop-table">
+                    <table class="data-table" id="promotionsTable">
+                        <thead>
+                            <tr>
+                                <th id="promoNameHeader">Nom</th>
+                                <th id="promoTypeHeader">Type</th>
+                                <th id="promoCodeHeader">Code promo</th>
+                                <th id="promoRuleHeader">Règle</th>
+                                <th id="promoPeriodHeader">Période</th>
+                                <th id="promoStatusHeader">Statut</th>
+                                <th id="promoActionsHeader">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promotionsTableBody">
+                            <tr><td colspan="7" class="loading-cell">Chargement...<\/td><\/tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ========== 积分配置面板 ========== -->
+            <div id="pointsPanel" class="admin-panel">
+                <div class="config-card">
+                    <h3 id="pointsConfigTitle">⭐ Configuration des points</h3>
+                    <div class="form-group">
+                        <label id="exchangeRateLabel">1 Euro = ? Points</label>
+                        <input type="number" id="exchangeRate" class="form-input" step="0.5" value="10">
+                        <small>Points par euro dépensé</small>
+                    </div>
+                    <div class="form-group">
+                        <label id="redeemRateLabel">? Points = 1 Euro</label>
+                        <input type="number" id="redeemRate" class="form-input" step="1" value="100">
+                        <small>Points nécessaires pour 1€ de réduction</small>
+                    </div>
+                    <div class="form-group">
+                        <label id="registerBonusLabel">Points à l'inscription</label>
+                        <input type="number" id="registerBonus" class="form-input" step="10" value="100">
+                        <small>Points offerts aux nouveaux clients</small>
+                    </div>
+                    <div class="form-group">
+                        <label id="maxRedeemLabel">% maximum utilisable par commande</label>
+                        <input type="number" id="maxRedeemPercent" class="form-input" step="5" value="30">
+                        <small>Pourcentage maximum du montant utilisable avec points</small>
+                    </div>
+                    <button class="btn-save" id="savePointsConfigBtn">💾 Enregistrer</button>
+                </div>
+            </div>
+
+            <!-- ========== 分配司机面板 ========== -->
+            <div id="assignPanel" class="admin-panel">
+                <div class="panel-header">
+                    <h2 id="assignPanelTitle">🚚 Assigner un chauffeur</h2>
+                </div>
+                
+                <!-- 待分配订单 -->
+                <div class="card-list">
+                    <div class="section-title" id="unassignedTitle">📋 Commandes à assigner</div>
+                    <div class="order-cards" id="unassignedOrdersList">
+                        <div class="loading-cell">Chargement...</div>
+                    </div>
+                </div>
+                
+                <!-- 已分配订单 -->
+                <div class="card-list" style="margin-top: 24px;">
+                    <div class="section-title" id="assignedTitle">✅ Commandes assignées</div>
+                    <div class="order-cards" id="assignedOrdersList">
+                        <div class="loading-cell">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 订单详情模态框 -->
+    <div id="orderDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Détails de la commande</h2>
+                <button class="close-modal" id="closeModalBtn">&times;</button>
+            </div>
+            <div id="orderDetailContent" class="order-detail-content"></div>
+            <div class="modal-actions">
+                <button class="btn-confirm" id="confirmOrderBtn">✅ Confirmer</button>
+                <button class="btn-deliver" id="deliverOrderBtn">🚚 Livrer</button>
+                <button class="btn-cancel" id="cancelOrderBtn">❌ Annuler</button>
+                <button class="btn-paid" id="markPaidBtn">💰 Marquer payé</button>
+            </div>
+        </div>
+    </div>
+
+ <!-- 活动编辑模态框 -->
+<div id="promotionModal" class="modal">
+    <div class="modal-content modal-promotion">
+        <div class="modal-header">
+            <h2 id="promotionModalTitle">Ajouter une promotion</h2>
+            <button class="close-modal" id="closePromotionModalBtn">&times;</button>
+        </div>
+        <form id="promotionForm">
+            <input type="hidden" id="promotionId">
+            
+            <div class="form-row">
+                <div class="form-group half">
+                    <label id="promoNameFrLabel">Nom (Français) *</label>
+                    <input type="text" id="promoNameFr" class="form-input" required>
+                </div>
+                <div class="form-group half">
+                    <label id="promoNameZhLabel">名称 (中文) *</label>
+                    <input type="text" id="promoNameZh" class="form-input" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label id="promoTypeLabel">Type *</label>
+                <select id="promoType" class="form-input" required>
+                    <option value="discount">📉 Remise en pourcentage (%)</option>
+                    <option value="spend_reduce">💰 Réduction sur montant (multi-niveaux)</option>
+                    <option value="points_multiplier">⭐ Multiplicateur de points</option>
+                    <option value="free_shipping">🚚 Livraison gratuite</option>
+                    <option value="buy_n_get_m">🎁 Achetez N, obtenez M gratuit</option>
+                </select>
+            </div>
+            
+            <!-- 折扣活动字段 -->
+            <div id="discountFields" class="conditional-fields">
+                <div class="form-group">
+                    <label id="discountPercentLabel">Pourcentage de remise (%)</label>
+                    <input type="number" id="discountPercent" class="form-input" step="1" placeholder="ex: 10 = -10%">
+                </div>
+            </div>
+            
+            <!-- 满减多档字段 -->
+            <div id="spendReduceFields" class="conditional-fields" style="display:none;">
+                <div class="form-group">
+                    <label id="spendReduceTiersLabel">Niveaux de réduction (JSON)</label>
+                    <input type="text" id="spendReduceTiers" class="form-input" placeholder='[{"min":100,"reduce":10},{"min":200,"reduce":30}]'>
+                    <small>Format: [{"min":montant_min,"reduce":reduction}, ...]</small>
+                </div>
+            </div>
+            
+            <!-- 积分倍率字段 -->
+            <div id="pointsMultiplierFields" class="conditional-fields" style="display:none;">
+                <div class="form-group">
+                    <label id="pointsMultiplierLabel">Multiplicateur de points</label>
+                    <input type="number" id="pointsMultiplier" class="form-input" step="1" value="2">
+                </div>
+            </div>
+            
+            <!-- 免运费字段 -->
+            <div id="freeShippingFields" class="conditional-fields" style="display:none;">
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="freeShippingCheckbox">
+                            <span>🚚 Livraison gratuite</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 买N送M字段 -->
+            <div id="buyNGetMFields" class="conditional-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>🎁 Acheter (N)</label>
+                        <input type="number" id="buyN" class="form-input" min="2" value="3" placeholder="ex: 3">
+                        <small>Quantité à acheter</small>
+                    </div>
+                    <div class="form-group half">
+                        <label>🎁 Obtenir gratuitement (M)</label>
+                        <input type="number" id="getM" class="form-input" min="1" value="1" placeholder="ex: 1">
+                        <small>Quantité offerte</small>
+                    </div>
+                </div>
+                <small style="color:#64748b; display:block; margin-top:-5px;">
+                    Exemple: Achetez 3, obtenez 1 gratuit
+                </small>
+            </div>
+            
+            <!-- 优惠码选项 -->
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="needCoupon">
+                        <span id="needCouponLabel">Nécessite un code promo</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="couponFields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label id="couponCodeLabel">Code promo</label>
+                        <input type="text" id="couponCode" class="form-input" placeholder="YIDA-XXXXXX">
+                    </div>
+                    <div class="form-group half">
+                        <label id="usageLimitLabel">Limite d'utilisation</label>
+                        <input type="number" id="usageLimit" class="form-input" value="0" placeholder="0 = illimité">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label id="perUserLimitLabel">Par client</label>
+                    <input type="number" id="perUserLimit" class="form-input" value="1">
+                </div>
+                <button type="button" class="btn-small" id="generateCouponBtn">🎲 Générer un code</button>
+            </div>
+            
+            <!-- 适用分类 -->
+            <div class="form-group">
+                <label id="categoriesLabel">Catégories concernées</label>
+                <div class="checkbox-group" id="categoriesGroup">
+                    <label><input type="checkbox" value="dry" class="category-checkbox"> 🥨 Sec</label>
+                    <label><input type="checkbox" value="frozen" class="category-checkbox"> ❄️ Surgelé</label>
+                    <label><input type="checkbox" value="fresh" class="category-checkbox"> 🥬 Frais</label>
+                    <label><input type="checkbox" value="nonfood" class="category-checkbox"> 🧴 Non-alimentaire</label>
+                    <label><input type="checkbox" value="drinks" class="category-checkbox"> 🍷 Boissons</label>
+                    <label><input type="checkbox" value="bangkok" class="category-checkbox"> 🏭 Bangkok Factory</label>
+                    <label><input type="checkbox" value="all" id="allCategories" class="category-checkbox"> Tous</label>
+                </div>
+            </div>
+            
+            <!-- 适用用户 -->
+           <!-- 适用商品 -->
+            <div class="form-group">
+                <label id="applicableProductsLabel">📦 Produits concernés</label>
+                <select id="applicableProducts" class="form-input" multiple size="6" style="height: auto; min-height: 150px;">
+                    <option value="">Chargement des produits...</option>
+                </select>
+                <small>Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs produits. Laissez vide pour appliquer à tous.</small>
+            </div>
+            
+            <!-- 叠加规则 -->
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="stackable">
+                        <span id="stackableLabel">Autoriser la superposition avec d'autres offres</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 活动时间 -->
+            <div class="form-row">
+                <div class="form-group half">
+                    <label id="startDateLabel">Date de début *</label>
+                    <input type="datetime-local" id="startDate" class="form-input" required>
+                </div>
+                <div class="form-group half">
+                    <label id="endDateLabel">Date de fin *</label>
+                    <input type="datetime-local" id="endDate" class="form-input" required>
+                </div>
+            </div>
+            
+            <!-- 启用状态 -->
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="promoActive" checked>
+                        <span id="activeLabel">Activer la promotion</span>
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary" id="savePromotionBtn">💾 Enregistrer</button>
+        </form>
+    </div>
+</div>
+
+    <!-- 分配司机模态框 -->
+    <div id="assignDriverModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="assignDriverModalTitle">🚚 Assigner un chauffeur</h2>
+                <button class="close-modal" id="closeAssignModalBtn">&times;</button>
+            </div>
+            <div class="form-group">
+                <label id="driverSelectLabel">Chauffeur</label>
+                <select id="driverSelect" class="form-input">
+                    <option value="">Chargement...</option>
+                </select>
+            </div>
+            <button class="btn-primary" id="confirmAssignBtn">✅ Assigner</button>
+        </div>
+    </div>
+
+    <!-- 自定义确认框 - 美化版 -->
+    <div id="customConfirmModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-icon" id="confirmIcon">❓</div>
+            <h3 class="custom-modal-title" id="confirmTitle">Confirmation</h3>
+            <p class="custom-modal-message" id="confirmMessage">Êtes-vous sûr ?</p>
+            <div class="custom-modal-buttons">
+                <button class="custom-modal-btn cancel" id="confirmCancelBtn">Annuler</button>
+                <button class="custom-modal-btn confirm" id="confirmOkBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义提示框 -->
+    <div id="customToast" class="toast">
+        <span id="toastIcon">✅</span>
+        <span id="toastMessage"></span>
+    </div>
+</body>
+</html>
