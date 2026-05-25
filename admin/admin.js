@@ -1408,8 +1408,15 @@ async function savePromotion(e) {
     const nameZh = document.getElementById('promoNameZh').value.trim();
     const type = document.getElementById('promoType').value;
     const needCoupon = document.getElementById('needCoupon').checked;
-    let couponCode = document.getElementById('couponCode').value.trim();
-    if (needCoupon && !couponCode) couponCode = generateCouponCode();
+    let couponCode = null;  // 改成 null
+    if (needCoupon) {
+            couponCode = document.getElementById('couponCode').value.trim();
+            if (!couponCode) {
+                couponCode = generateCouponCode();
+            }
+        }
+        // 不需要优惠码时，couponCode 保持 null
+   
     const usageLimit = parseInt(document.getElementById('usageLimit').value) || 0;
     const perUserLimit = parseInt(document.getElementById('perUserLimit').value) || 1;
     const stackable = document.getElementById('stackable').checked;
