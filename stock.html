@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>LOGISTIC · Gestion de Stock</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f0f4f8;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .navbar {
+            background: white;
+            border-radius: 28px;
+            padding: 16px 28px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #2f6d9e, #27ae60);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2f6d9e, #27ae60);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .category-drinks {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .category-bangkok {
+            background: #fef08a;
+            color: #854d0e;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .user-type {
+            font-size: 12px;
+            padding: 5px 14px;
+            border-radius: 30px;
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .logout-link {
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 18px;
+            border-radius: 30px;
+            background: #fef2f2;
+            transition: all 0.2s;
+        }
+
+        .logout-link:hover {
+            background: #fee2e2;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .lang-switch {
+            display: flex;
+            gap: 8px;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: #2f6d9e;
+            color: white;
+            border-color: #2f6d9e;
+        }
+
+        .add-btn, .import-btn, .template-btn {
+            background: linear-gradient(135deg, #2f6d9e, #27ae60);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 34px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .import-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .template-btn {
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
+
+        .add-btn:hover, .import-btn:hover, .template-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .category-tab {
+            padding: 10px 24px;
+            border-radius: 40px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .category-tab.active {
+            background: linear-gradient(135deg, #2f6d9e, #27ae60);
+            border-color: transparent;
+            color: white;
+        }
+
+        .category-tab:hover:not(.active) {
+            border-color: #2f6d9e;
+        }
+
+        .category-tab[data-category="promotion"] {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #d97706;
+        }
+
+        .category-tab[data-category="promotion"].active {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+
+        .promotion-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #f1f5f9;
+            cursor: pointer;
+        }
+
+        .product-image-placeholder {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            font-size: 48px;
+            color: #94a3b8;
+            cursor: pointer;
+            gap: 8px;
+        }
+
+        .upload-image-btn {
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .product-info {
+            padding: 16px;
+        }
+
+        .product-name-fr {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .product-name-zh {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .product-category {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .category-dry { background: #fef3c7; color: #d97706; }
+        .category-frozen { background: #dbeafe; color: #2563eb; }
+        .category-fresh { background: #dcfce7; color: #16a34a; }
+        .category-nonfood { background: #f3e8ff; color: #9333ea; }
+
+        .product-price {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .price-current {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2f6d9e;
+        }
+
+        .price-original {
+            font-size: 14px;
+            color: #94a3b8;
+            text-decoration: line-through;
+        }
+
+        .price-promo {
+            font-size: 22px;
+            font-weight: 700;
+            color: #dc2626;
+        }
+
+        .discount-badge {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .product-quantity {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 12px 0;
+            padding: 8px 0;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .quantity-value {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .quantity-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .qty-btn.minus {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .qty-btn.plus {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .qty-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .edit-btn, .delete-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .edit-btn {
+            background: #f1f5f9;
+            color: #2f6d9e;
+            border: none;
+        }
+
+        .delete-btn {
+            background: #fef2f2;
+            color: #ef4444;
+            border: none;
+        }
+
+        .edit-btn:hover, .delete-btn:hover {
+            filter: brightness(0.95);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            padding: 32px;
+            width: 90%;
+            max-width: 550px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .close-modal {
+            font-size: 28px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .form-label small {
+            font-weight: normal;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #2f6d9e;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .checkbox-group input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .image-preview {
+            margin-top: 12px;
+            width: 100%;
+            height: 150px;
+            border-radius: 16px;
+            object-fit: cover;
+            display: none;
+        }
+
+        .image-preview.show {
+            display: block;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #2f6d9e, #27ae60);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 24px;
+            color: #94a3b8;
+        }
+
+        .permission-error {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 24px;
+        }
+
+        .import-progress {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 16px;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .import-success { color: #16a34a; }
+        .import-error { color: #dc2626; }
+
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .custom-modal.active {
+            display: flex;
+        }
+
+        .custom-modal-content {
+            background: white;
+            border-radius: 48px;
+            padding: 32px 28px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            animation: modalPop 0.3s ease;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.3);
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .custom-modal-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        .custom-modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #0f172a;
+        }
+
+        .custom-modal-message {
+            color: #475569;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        .custom-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .custom-modal-btn {
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 14px;
+        }
+
+        .custom-modal-btn.confirm {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+
+        .custom-modal-btn.cancel {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .custom-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10001;
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .custom-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .custom-toast.success {
+            background: #16a34a;
+        }
+
+        .custom-toast.error {
+            background: #dc2626;
+        }
+
+        .custom-toast.warning {
+            background: #d97706;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            .header-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .navbar {
+                padding: 12px 20px;
+            }
+            .modal-content {
+                padding: 24px;
+            }
+            .button-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    .category-packaging {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .category-seasoning {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo-area">
+                <div class="logo-icon">📊</div>
+                <div class="logo-text">Gestion de Stock</div>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="userName"></span>
+                <span class="user-type" id="userType"></span>
+                <a href="#" class="logout-link" id="logoutBtn">Déconnexion</a>
+            </div>
+        </div>
+
+        <div id="permissionError" class="permission-error" style="display: none;">
+            <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+            <h2 style="margin-bottom: 12px;">Accès non autorisé</h2>
+            <p style="color: #64748b;">Seuls les administrateurs, managers et secrétaires peuvent accéder à la gestion de stock.</p>
+            <a href="index.html" style="display: inline-block; margin-top: 24px; padding: 12px 24px; background: #2f6d9e; color: white; border-radius: 30px; text-decoration: none;">Retour à l'accueil</a>
+        </div>
+
+        <div id="mainContent">
+            <div class="header-bar">
+                <h1 class="page-title" id="pageTitle">📦 Gestion des produits</h1>
+                <div class="button-group">
+                    <div class="lang-switch">
+                        <button class="lang-btn active" data-lang="fr">🇫🇷</button>
+                        <button class="lang-btn" data-lang="zh">🇨🇳</button>
+                    </div>
+                    <button class="template-btn" id="downloadTemplateBtn">📥 Template Excel</button>
+                    <button class="import-btn" id="importExcelBtn">📎 Importer Excel</button>
+                    <button class="add-btn" id="openAddModalBtn">+ Ajouter</button>
+                </div>
+            </div>
+
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+
+            <div class="category-tabs">
+                <button class="category-tab active" data-category="all" id="tabAll">Tous</button>
+                <button class="category-tab" data-category="dry" id="tabDry">🥨 Sec</button>
+                <button class="category-tab" data-category="frozen" id="tabFrozen">❄️ Surgelé</button>
+                <button class="category-tab" data-category="fresh" id="tabFresh">🥬 Frais</button>
+                <button class="category-tab" data-category="nonfood" id="TabNonfood">🧴 Hygiène</button>
+                <button class="category-tab" data-category="drinks" id="tabDrinks">🍷 Boissons</button>
+                <button class="category-tab" data-category="bangkok" id="tabBangkok">🍜 Bangkok Factory</button>
+                <button class="category-tab" data-category="packaging" id="tabPackaging">🎒 Sacs d'emballage</button>
+                <button class="category-tab" data-category="seasoning" id="tabSeasoning">🧂 Assaisonnement</button>
+                <button class="category-tab" data-category="promotion" id="tabPromotion">🔥 Promotion</button>
+            </div>
+
+            <div id="productsGrid" class="products-grid">
+                <div class="empty-state">Chargement des produits...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑商品模态框 -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Ajouter un produit</h2>
+                <span class="close-modal" id="closeModalBtn">&times;</span>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="form-group">
+                    <label class="form-label" id="labelNameFr">Nom (Français) <small>*</small></label>
+                    <input type="text" class="form-input" id="productNameFr" required placeholder="ex: Pomme">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="labelNameZh">名称 (中文) <small>*</small></label>
+                    <input type="text" class="form-input" id="productNameZh" required placeholder="例：苹果">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="labelCategory">Catégorie *</label>
+                   <select class="form-select" id="productCategory" required>
+                    <option value="dry">🥨 Sec</option>
+                    <option value="frozen">❄️ Surgelé</option>
+                    <option value="fresh">🥬 Frais</option>
+                    <option value="nonfood">🧴 Hygiène</option>
+                    <option value="drinks">🍷 Boissons</option>
+                    <option value="bangkok">🍜 Bangkok Factory</option>
+                    <option value="packaging">🎒 Sacs d'emballage</option>
+                    <option value="seasoning">🧂 Assaisonnement</option>
+                </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="labelPrice">Prix (€) *</label>
+                    <input type="number" step="0.01" class="form-input" id="productPrice" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="labelQuantity">Quantité en stock</label>
+                    <input type="number" class="form-input" id="productQuantity" value="0">
+                </div>
+                
+                <!-- 促销选项 -->
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="isPromotion">
+                        <label id="labelPromotion">🔥 Produit en promotion</label>
+                    </div>
+                </div>
+                
+                <div id="promoOptions" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Mode de calcul</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="promoType" value="percent" checked> Pourcentage
+                            </label>
+                            <label>
+                                <input type="radio" name="promoType" value="fixed"> Prix fixe
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="percentGroup">
+                        <label class="form-label" id="labelDiscountPercent">Réduction (%)</label>
+                        <input type="number" step="1" class="form-input" id="discountPercent" placeholder="ex: 20 pour 20% de réduction">
+                        <small style="color:#64748b; display:block; margin-top:5px;">Prix promo = Prix × (100 - réduction%) / 100</small>
+                    </div>
+                    <div class="form-group" id="fixedPriceGroup" style="display: none;">
+                        <label class="form-label" id="labelPromoPrice">Prix promotionnel (€)</label>
+                        <input type="number" step="0.01" class="form-input" id="promotionPrice" placeholder="Prix après réduction">
+                    </div>
+                    <div id="previewPromoPrice" style="background:#f1f5f9; padding:10px; border-radius:12px; margin-bottom:16px; font-size:14px;">
+                        <strong>💰 Prix promo calculé :</strong> <span id="previewPriceDisplay">-</span> €
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" id="labelImage">Image du produit</label>
+                    <input type="file" class="form-input" id="productImage" accept="image/*">
+                    <img id="imagePreview" class="image-preview">
+                </div>
+                <button type="submit" class="submit-btn" id="submitBtn">Ajouter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 导入Excel模态框 -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="importTitle">Importer Excel</h2>
+                <span class="close-modal" id="closeImportModalBtn">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fichier Excel (.xlsx, .xls, .csv)</label>
+                <input type="file" id="importExcelFile" accept=".xlsx,.xls,.csv" class="form-input">
+            </div>
+            <button class="submit-btn" id="confirmImportBtn">Importer</button>
+            <div id="importProgress" class="import-progress" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 自定义确认框 -->
+    <div id="customConfirmModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-icon" id="confirmIcon">❓</div>
+            <h3 class="custom-modal-title" id="confirmTitle">Confirmation</h3>
+            <p class="custom-modal-message" id="confirmMessage">Êtes-vous sûr ?</p>
+            <div class="custom-modal-buttons">
+                <button class="custom-modal-btn cancel" id="confirmCancelBtn">Annuler</button>
+                <button class="custom-modal-btn confirm" id="confirmOkBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customToast" class="custom-toast">
+        <span id="toastIcon">✅</span>
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let canModify = false;
+        let currentCategory = 'all';
+        let currentLang = 'fr';
+        let products = [];
+
+        const translations = {
+            fr: {
+                
+                tabPackaging: "🎒 Sacs d'emballage",
+tabSeasoning: "🧂 Assaisonnement",
+                tabDrinks: "🍷 Boissons",
+                tabBangkok: "🍜 Bangkok Factory",   
+                pageTitle: "📦 Gestion des produits",
+                addBtn: "+ Ajouter",
+                importBtn: "📎 Importer Excel",
+                templateBtn: "📥 Template Excel",
+                tabAll: "Tous",
+                tabDry: "🥨 Sec",
+                tabFrozen: "❄️ Surgelé",
+                tabFresh: "🥬 Frais",
+                tabNonfood: "🧴 hygiène",
+                tabPromotion: "🔥 Promotion",
+                modalAddTitle: "Ajouter un produit",
+                modalEditTitle: "Modifier le produit",
+                labelNameFr: "Nom (Français) *",
+                labelNameZh: "名称 (中文) *",
+                labelCategory: "Catégorie *",
+                labelPrice: "Prix (€) *",
+                labelQuantity: "Quantité en stock",
+                labelPromotion: "🔥 Produit en promotion",
+                labelDiscountPercent: "Réduction (%)",
+                labelPromoPrice: "Prix promotionnel (€)",
+                labelImage: "Image du produit",
+                submitAdd: "Ajouter",
+                submitEdit: "Modifier",
+                saving: "Enregistrement...",
+                deleteConfirmTitle: "Confirmation",
+                deleteConfirmMsg: "Voulez-vous vraiment supprimer ce produit ?",
+                deleteSuccess: "Produit supprimé avec succès",
+                saveSuccess: "Produit enregistré avec succès",
+                uploadError: "Erreur lors de l'upload de l'image",
+                bucketError: "Bucket 'product-images' inexistant",
+                permissionError: "Permission insuffisante",
+                emptyProducts: "📭 Aucun produit dans cette catégorie",
+                loadingError: "❌ Erreur de chargement",
+                noPermission: "Accès non autorisé",
+                stockLabel: "Stock",
+                importTitle: "Importer Excel",
+                importSuccess: "Import terminé",
+                importProgress: "Import en cours...",
+                uploadImage: "Ajouter une image"
+            },
+            zh: {
+                tabPackaging: "🎒 打包带",
+                tabSeasoning: "🧂 调味料",
+                tabDrinks: "🍷 酒水",
+                tabBangkok: "🍜 曼谷工厂特供",
+                pageTitle: "📦 商品管理",
+                addBtn: "+ 添加",
+                importBtn: "📎 导入Excel",
+                templateBtn: "📥 下载Excel模板",
+                tabAll: "全部",
+                tabDry: "🥨 干货",
+                tabFrozen: "❄️ 速冻",
+                tabFresh: "🥬 生鲜",
+                tabNonfood: "🧴 卫生用品",
+                tabPromotion: "🔥 促销",
+                modalAddTitle: "添加商品",
+                modalEditTitle: "编辑商品",
+                labelNameFr: "法语名称 *",
+                labelNameZh: "中文名称 *",
+                labelCategory: "分类 *",
+                labelPrice: "价格 (€) *",
+                labelQuantity: "库存数量",
+                labelPromotion: "🔥 促销商品",
+                labelDiscountPercent: "折扣 (%)",
+                labelPromoPrice: "促销价格 (€)",
+                labelImage: "商品图片",
+                submitAdd: "添加",
+                submitEdit: "保存修改",
+                saving: "保存中...",
+                deleteConfirmTitle: "确认删除",
+                deleteConfirmMsg: "确定要删除这个商品吗？",
+                deleteSuccess: "商品删除成功",
+                saveSuccess: "商品保存成功",
+                uploadError: "图片上传失败",
+                bucketError: "存储桶不存在，请在 Supabase Storage 中创建",
+                permissionError: "权限不足",
+                emptyProducts: "📭 该分类下暂无商品",
+                loadingError: "❌ 加载失败",
+                noPermission: "无访问权限",
+                stockLabel: "库存",
+                importTitle: "导入Excel",
+                importSuccess: "导入完成",
+                importProgress: "导入中...",
+                uploadImage: "上传图片"
+            }
+        };
+
+       const categoryLabels = {
+            'dry': { fr: 'Sec', zh: '干货' },
+            'frozen': { fr: 'Surgelé', zh: '速冻' },
+            'fresh': { fr: 'Frais', zh: '生鲜' },
+            'nonfood': { fr: 'Hygiène', zh: '卫生用品' },  // 改为卫生用品
+            'drinks': { fr: 'Boissons', zh: '酒水' },
+            'bangkok': { fr: 'Bangkok Factory', zh: '曼谷工厂特供' },
+            'packaging': { fr: 'Sacs d\'emballage', zh: '打包带' },      // 新增
+            'seasoning': { fr: 'Assaisonnement', zh: '调味料' }         // 新增
+        };
+
+        const categoryClasses = {
+            'dry': 'category-dry',
+            'frozen': 'category-frozen',
+            'fresh': 'category-fresh',
+            'nonfood': 'category-nonfood',
+            'drinks': 'category-drinks',
+            'bangkok': 'category-bangkok',
+            'packaging': 'category-packaging',   // 新增
+            'seasoning': 'category-seasoning'    // 新增
+        };
+
+        function showConfirm(title, message, onConfirm) {
+            const modal = document.getElementById('customConfirmModal');
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            modal.classList.add('active');
+            const confirmBtn = document.getElementById('confirmOkBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            const handler = (confirmed) => {
+                confirmBtn.removeEventListener('click', confirmHandler);
+                cancelBtn.removeEventListener('click', cancelHandler);
+                modal.classList.remove('active');
+                if (confirmed && onConfirm) onConfirm();
+            };
+            const confirmHandler = () => handler(true);
+            const cancelHandler = () => handler(false);
+            confirmBtn.addEventListener('click', confirmHandler, { once: true });
+            cancelBtn.addEventListener('click', cancelHandler, { once: true });
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('customToast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMessage');
+            toast.classList.remove('success', 'error', 'warning');
+            toast.classList.add(type);
+            icon.textContent = type === 'success' ? '✅' : (type === 'error' ? '❌' : '⚠️');
+            msgEl.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // 计算促销价格
+        function calculatePromoPrice() {
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const isPromo = document.getElementById('isPromotion').checked;
+            
+            if (!isPromo || isNaN(price) || price <= 0) {
+                document.getElementById('previewPriceDisplay').textContent = '-';
+                return;
+            }
+            
+            const promoType = document.querySelector('input[name="promoType"]:checked').value;
+            let promoPrice = null;
+            
+            if (promoType === 'percent') {
+                const percent = parseFloat(document.getElementById('discountPercent').value);
+                if (!isNaN(percent) && percent > 0 && percent <= 100) {
+                    promoPrice = price * (100 - percent) / 100;
+                }
+            } else {
+                const fixedPrice = parseFloat(document.getElementById('promotionPrice').value);
+                if (!isNaN(fixedPrice) && fixedPrice > 0) {
+                    promoPrice = fixedPrice;
+                }
+            }
+            
+            if (promoPrice !== null) {
+                document.getElementById('previewPriceDisplay').textContent = promoPrice.toFixed(2);
+            } else {
+                document.getElementById('previewPriceDisplay').textContent = '-';
+            }
+        }
+
+        // 获取最终的促销价格
+        function getPromotionPrice() {
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const isPromo = document.getElementById('isPromotion').checked;
+            if (!isPromo || isNaN(price) || price <= 0) return null;
+            
+            const promoType = document.querySelector('input[name="promoType"]:checked').value;
+            if (promoType === 'percent') {
+                const percent = parseFloat(document.getElementById('discountPercent').value);
+                if (!isNaN(percent) && percent > 0 && percent <= 100) {
+                    return price * (100 - percent) / 100;
+                }
+            } else {
+                const fixedPrice = parseFloat(document.getElementById('promotionPrice').value);
+                if (!isNaN(fixedPrice) && fixedPrice > 0) {
+                    return fixedPrice;
+                }
+            }
+            return null;
+        }
+
+        // 获取折扣百分比（用于显示）
+        function getDiscountPercent() {
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const isPromo = document.getElementById('isPromotion').checked;
+            if (!isPromo || isNaN(price) || price <= 0) return 0;
+            
+            const promoType = document.querySelector('input[name="promoType"]:checked').value;
+            if (promoType === 'percent') {
+                return parseFloat(document.getElementById('discountPercent').value) || 0;
+            } else {
+                const fixedPrice = parseFloat(document.getElementById('promotionPrice').value);
+                if (!isNaN(fixedPrice) && fixedPrice > 0 && price > 0) {
+                    return Math.round((1 - fixedPrice / price) * 100);
+                }
+            }
+            return 0;
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLang];
+             document.getElementById('tabPackaging').textContent = t.tabPackaging;   // 添加这一行
+            document.getElementById('tabSeasoning').textContent = t.tabSeasoning;   // 添加这一行
+
+            document.getElementById('pageTitle').innerHTML = t.pageTitle;
+            document.getElementById('openAddModalBtn').innerHTML = t.addBtn;
+            document.getElementById('importExcelBtn').innerHTML = t.importBtn;
+            document.getElementById('downloadTemplateBtn').innerHTML = t.templateBtn;
+            document.getElementById('tabAll').textContent = t.tabAll;
+            document.getElementById('tabDry').textContent = t.tabDry;
+            document.getElementById('tabFrozen').textContent = t.tabFrozen;
+            document.getElementById('tabFresh').textContent = t.tabFresh;
+            document.getElementById('TabNonfood').textContent = t.tabNonfood;
+            document.getElementById('tabPromotion').textContent = t.tabPromotion;
+            document.getElementById('labelNameFr').innerHTML = t.labelNameFr;
+            document.getElementById('labelNameZh').innerHTML = t.labelNameZh;
+            document.getElementById('labelCategory').innerHTML = t.labelCategory;
+            document.getElementById('labelPrice').innerHTML = t.labelPrice;
+            document.getElementById('labelQuantity').innerHTML = t.labelQuantity;
+            document.getElementById('labelPromotion').innerHTML = t.labelPromotion;
+            document.getElementById('labelDiscountPercent').innerHTML = t.labelDiscountPercent;
+            document.getElementById('labelPromoPrice').innerHTML = t.labelPromoPrice;
+            document.getElementById('labelImage').innerHTML = t.labelImage;
+            document.getElementById('tabDrinks').textContent = t.tabDrinks;
+            document.getElementById('tabBangkok').textContent = t.tabBangkok;   
+            document.getElementById('importTitle').textContent = t.importTitle;
+            const modalTitle = document.getElementById('modalTitle');
+            if (modalTitle.textContent.includes('Ajouter') || modalTitle.textContent.includes('添加')) {
+                modalTitle.textContent = t.modalAddTitle;
+            }
+            renderProducts();
+        }
+
+        // 促销选项显示/隐藏
+        function togglePromoOptions() {
+            const isPromo = document.getElementById('isPromotion').checked;
+            document.getElementById('promoOptions').style.display = isPromo ? 'block' : 'none';
+            if (!isPromo) {
+                document.getElementById('previewPriceDisplay').textContent = '-';
+            } else {
+                calculatePromoPrice();
+            }
+        }
+
+        function togglePromoType() {
+            const promoType = document.querySelector('input[name="promoType"]:checked').value;
+            document.getElementById('percentGroup').style.display = promoType === 'percent' ? 'block' : 'none';
+            document.getElementById('fixedPriceGroup').style.display = promoType === 'fixed' ? 'block' : 'none';
+            calculatePromoPrice();
+        }
+
+        // ========== Excel 导入功能 ==========
+        function downloadTemplate() {
+            const data = [
+                ['name_fr', 'name_zh', 'category', 'price', 'quantity', 'is_promotion', 'discount_percent'],
+                ['Pomme', '苹果', 'fresh', 2.5, 100, 'FALSE', ''],
+                ['Riz', '大米', 'dry', 5.0, 50, 'TRUE', 20],
+                ['Poisson surgelé', '冷冻鱼', 'frozen', 12.0, 30, 'FALSE', ''],
+                ['Sauce soja', '酱油', 'nonfood', 3.5, 200, 'FALSE', '']
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Produits');
+            XLSX.writeFile(wb, 'template_produits.xlsx');
+            showToast('Template téléchargé', 'success');
+        }
+
+        function showImportModal() {
+            document.getElementById('importModal').classList.add('active');
+            document.getElementById('importExcelFile').value = '';
+            document.getElementById('importProgress').style.display = 'none';
+        }
+
+        async function importExcel() {
+            const fileInput = document.getElementById('importExcelFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                showToast('Veuillez sélectionner un fichier Excel', 'warning');
+                return;
+            }
+
+            const progressDiv = document.getElementById('importProgress');
+            progressDiv.style.display = 'block';
+            progressDiv.innerHTML = '<div>📖 Lecture du fichier...</div>';
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+                
+                if (!rows || rows.length < 2) {
+                    progressDiv.innerHTML = '<div class="import-error">❌ Fichier vide ou invalide</div>';
+                    return;
+                }
+                
+                const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+                const requiredHeaders = ['name_fr', 'name_zh', 'category', 'price'];
+                const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+                if (missingHeaders.length > 0) {
+                    progressDiv.innerHTML = `<div class="import-error">❌ Colonnes manquantes: ${missingHeaders.join(', ')}</div>`;
+                    return;
+                }
+
+                let successCount = 0;
+                let errorCount = 0;
+                const errors = [];
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+                    
+                    const getValue = (colName) => {
+                        const idx = headers.indexOf(colName);
+                        return idx !== -1 && row[idx] !== undefined ? row[idx] : '';
+                    };
+                    
+                    const nameFr = String(getValue('name_fr') || '').trim();
+                    const nameZh = String(getValue('name_zh') || '').trim();
+                    const categoryRaw = String(getValue('category') || '').toLowerCase().trim();
+                    const priceRaw = getValue('price');
+                    const quantityRaw = getValue('quantity');
+                    const isPromotionRaw = String(getValue('is_promotion') || 'false').toLowerCase();
+                    const discountPercent = parseInt(getValue('discount_percent')) || 0;
+                    
+                    if (!nameFr || !nameZh) {
+                        errors.push(`Ligne ${i}: Nom manquant`);
+                        errorCount++;
+                        continue;
+                    }
+                    const categoryMap = {
+                        'dry': 'dry', 'sec': 'dry',
+                        'frozen': 'frozen', 'surgelé': 'frozen', 'surgeles': 'frozen',
+                        'fresh': 'fresh', 'frais': 'fresh',
+                        'nonfood': 'nonfood', 'hygiène': 'nonfood', 'hygiene': 'nonfood', '卫生用品': 'nonfood',
+                        'drinks': 'drinks', 'boissons': 'drinks', '酒水': 'drinks',
+                        'bangkok': 'bangkok', 'bangkok factory': 'bangkok', '曼谷工厂特供': 'bangkok',
+                        'packaging': 'packaging', 'sacs d\'emballage': 'packaging', '打包带': 'packaging',
+                        'seasoning': 'seasoning', 'assaisonnement': 'seasoning', '调味料': 'seasoning'
+                    };
+                    let category = categoryMap[categoryRaw] || categoryRaw;
+                    if (!['dry', 'frozen', 'fresh', 'nonfood', 'drinks', 'bangkok', 'packaging', 'seasoning'].includes(category)) {
+                        errors.push(`Ligne ${i}: Catégorie invalide "${categoryRaw}"`);
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    const price = parseFloat(priceRaw);
+                    if (isNaN(price) || price <= 0) {
+                        errors.push(`Ligne ${i}: Prix invalide "${priceRaw}"`);
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    const quantity = parseInt(quantityRaw) || 0;
+                    const isPromotion = isPromotionRaw === 'true' || isPromotionRaw === '1' || isPromotionRaw === 'vrai';
+                    let promotionPrice = null;
+                    if (isPromotion && discountPercent > 0 && discountPercent <= 100) {
+                        promotionPrice = price * (100 - discountPercent) / 100;
+                    }
+                    
+                    try {
+                        const productData = {
+                            name_fr: nameFr,
+                            name_zh: nameZh,
+                            category: category,
+                            price: price,
+                            quantity: quantity,
+                            is_promotion: isPromotion,
+                            discount_percent: isPromotion ? discountPercent : 0,
+                            promotion_price: promotionPrice,
+                            created_at: new Date(),
+                            updated_at: new Date()
+                        };
+                        const { error } = await window.supabase.from('products').insert([productData]);
+                        if (error) throw error;
+                        successCount++;
+                        progressDiv.innerHTML = `<div>📝 Import: ${successCount + errorCount}/${rows.length - 1}</div>`;
+                    } catch (err) {
+                        errors.push(`Ligne ${i}: ${err.message}`);
+                        errorCount++;
+                    }
+                }
+                
+                progressDiv.innerHTML = `
+                    <div class="import-success">✅ Import réussi: ${successCount}</div>
+                    ${errorCount > 0 ? `<div class="import-error">❌ Erreurs: ${errorCount}</div>` : ''}
+                    ${errors.slice(0, 5).map(e => `<div class="import-error">⚠️ ${e}</div>`).join('')}
+                    ${errors.length > 5 ? `<div class="import-error">... et ${errors.length - 5} autres erreurs</div>` : ''}
+                `;
+                
+                showToast(`${successCount} produits importés`, successCount > 0 ? 'success' : 'error');
+                await loadProducts();
+                
+                if (successCount > 0) {
+                    setTimeout(() => {
+                        document.getElementById('importModal').classList.remove('active');
+                    }, 2000);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ========== 单独上传图片 ==========
+        async function uploadSingleImage(productId, file) {
+            if (!file) return null;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('L\'image ne doit pas dépasser 2MB', 'warning');
+                return null;
+            }
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const { data, error } = await window.supabase.storage
+                .from('product-images')
+                .upload(fileName, file, { cacheControl: '3600', upsert: false });
+            if (error) {
+                console.error('上传错误:', error);
+                showToast('Erreur upload', 'error');
+                return null;
+            }
+            const { data: urlData } = window.supabase.storage.from('product-images').getPublicUrl(fileName);
+            const imageUrl = urlData.publicUrl;
+            const { error: updateError } = await window.supabase
+                .from('products')
+                .update({ image_url: imageUrl, updated_at: new Date() })
+                .eq('id', productId);
+            if (updateError) {
+                showToast('Erreur mise à jour', 'error');
+                return null;
+            }
+            return imageUrl;
+        }
+
+        // ========== 商品管理功能 ==========
+        document.addEventListener('DOMContentLoaded', async function() {
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentLang = btn.dataset.lang;
+                    updateLanguage();
+                });
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            let session = null;
+            if (urlParams.has('session')) {
+                try { session = JSON.parse(decodeURIComponent(urlParams.get('session'))); } catch(e) {}
+            }
+            if (urlParams.has('lang')) {
+                currentLang = urlParams.get('lang');
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    if (btn.dataset.lang === currentLang) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+            }
+            if (!session) session = window.loadSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+
+            currentUser = session;
+            document.getElementById('userName').textContent = currentUser.username;
+            document.getElementById('userType').textContent = window.USER_TYPE_LABELS[currentUser.userType] || currentUser.userType;
+
+            if (!window.canAccessStock(currentUser.userType)) {
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('permissionError').style.display = 'block';
+                return;
+            }
+
+            canModify = window.canModifyStock(currentUser.userType);
+            if (!canModify) {
+                document.getElementById('openAddModalBtn').style.display = 'none';
+                document.getElementById('importExcelBtn').style.display = 'none';
+            }
+
+            await loadProducts();
+            updateLanguage();
+
+            document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.logout();
+            });
+
+            document.getElementById('openAddModalBtn').addEventListener('click', openAddModal);
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            document.getElementById('closeImportModalBtn').addEventListener('click', () => {
+                document.getElementById('importModal').classList.remove('active');
+            });
+            document.getElementById('productImage').addEventListener('change', previewImage);
+            document.getElementById('isPromotion').addEventListener('change', () => {
+                togglePromoOptions();
+            });
+            document.querySelectorAll('input[name="promoType"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    togglePromoType();
+                });
+            });
+            document.getElementById('discountPercent').addEventListener('input', calculatePromoPrice);
+            document.getElementById('promotionPrice').addEventListener('input', calculatePromoPrice);
+            document.getElementById('productPrice').addEventListener('input', calculatePromoPrice);
+            document.getElementById('productForm').addEventListener('submit', submitProduct);
+            document.getElementById('importExcelBtn').addEventListener('click', showImportModal);
+            document.getElementById('downloadTemplateBtn').addEventListener('click', downloadTemplate);
+            document.getElementById('confirmImportBtn').addEventListener('click', importExcel);
+
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentCategory = tab.dataset.category;
+                    renderProducts();
+                });
+            });
+
+            document.getElementById('productModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('productModal')) closeModal();
+            });
+            document.getElementById('importModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('importModal')) {
+                    document.getElementById('importModal').classList.remove('active');
+                }
+            });
+        });
+
+        async function loadProducts() {
+            try {
+                const { data, error } = await window.supabase
+                    .from('products')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                products = data || [];
+                renderProducts();
+            } catch (err) {
+                console.error('加载商品失败:', err);
+                document.getElementById('productsGrid').innerHTML = '<div class="empty-state">❌ Erreur de chargement</div>';
+            }
+        }
+
+        function renderProducts() {
+            let filtered = products;
+            if (currentCategory === 'promotion') {
+                filtered = products.filter(p => p.is_promotion === true);
+            } else if (currentCategory !== 'all') {
+                filtered = products.filter(p => p.category === currentCategory);
+            }
+            if (filtered.length === 0) {
+                document.getElementById('productsGrid').innerHTML = `<div class="empty-state">${translations[currentLang].emptyProducts}</div>`;
+                return;
+            }
+            const t = translations[currentLang];
+            const html = filtered.map(product => {
+                const isPromo = product.is_promotion === true;
+                const displayPrice = isPromo && product.promotion_price ? product.promotion_price : product.price;
+                const categoryLabel = categoryLabels[product.category][currentLang];
+                const hasImage = product.image_url && product.image_url !== '';
+                const discountPercent = product.discount_percent || 0;
+                return `
+                <div class="product-card">
+                    ${isPromo ? `<div class="promotion-badge">🔥 -${discountPercent}%</div>` : ''}
+                    <div onclick="triggerImageUpload('${product.id}')" style="cursor:pointer;">
+                        ${hasImage ? 
+                            `<img class="product-image" src="${product.image_url}" alt="${product.name_fr}">` : 
+                            `<div class="product-image-placeholder">
+                                📷
+                                <span class="upload-image-btn">${t.uploadImage}</span>
+                            </div>`
+                        }
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name-fr">${escapeHtml(currentLang === 'fr' ? (product.name_fr || '') : (product.name_zh || ''))}</div>
+                        <div class="product-name-zh">${escapeHtml(currentLang === 'fr' ? (product.name_zh || '') : (product.name_fr || ''))}</div>
+                        <span class="product-category ${categoryClasses[product.category]}">${escapeHtml(categoryLabel)}</span>
+                        <div class="product-price">
+                            ${isPromo ? `
+                                <span class="price-promo">${formatPrice(displayPrice)} €</span>
+                                <span class="price-original">${formatPrice(product.price)} €</span>
+                                <span class="discount-badge">-${discountPercent}%</span>
+                            ` : `
+                                <span class="price-current">${formatPrice(product.price)} €</span>
+                            `}
+                        </div>
+                        <div class="product-quantity">
+                            <span class="quantity-value">📦 ${t.stockLabel}: ${product.quantity || 0}</span>
+                            ${canModify ? `
+                                <div class="quantity-controls">
+                                    <button class="qty-btn minus" onclick="updateQuantity('${product.id}', -1)">-</button>
+                                    <button class="qty-btn plus" onclick="updateQuantity('${product.id}', 1)">+</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${canModify ? `
+                            <div class="product-actions">
+                                <button class="edit-btn" onclick="openEditModal('${product.id}')">✏️ Modifier</button>
+                                <button class="delete-btn" onclick="deleteProduct('${product.id}')">🗑️ Supprimer</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `}).join('');
+            document.getElementById('productsGrid').innerHTML = html;
+        }
+
+        function formatPrice(price) { return parseFloat(price).toFixed(2); }
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+        async function updateQuantity(productId, delta) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            const newQuantity = (product.quantity || 0) + delta;
+            if (newQuantity < 0) return;
+            try {
+                await window.supabase.from('products').update({ quantity: newQuantity, updated_at: new Date() }).eq('id', productId);
+                product.quantity = newQuantity;
+                renderProducts();
+                showToast(translations[currentLang].saveSuccess, 'success');
+            } catch (err) { showToast('Erreur', 'error'); }
+        }
+
+        async function deleteProduct(productId) {
+            const t = translations[currentLang];
+            showConfirm(t.deleteConfirmTitle, t.deleteConfirmMsg, async () => {
+                try {
+                    await window.supabase.from('products').delete().eq('id', productId);
+                    products = products.filter(p => p.id !== productId);
+                    renderProducts();
+                    showToast(t.deleteSuccess, 'success');
+                } catch (err) { showToast('Erreur', 'error'); }
+            });
+        }
+
+        function openAddModal() {
+            const t = translations[currentLang];
+            document.getElementById('modalTitle').textContent = t.modalAddTitle;
+            document.getElementById('productId').value = '';
+            document.getElementById('productForm').reset();
+            document.getElementById('imagePreview').classList.remove('show');
+            document.getElementById('productImage').value = '';
+            document.getElementById('isPromotion').checked = false;
+            document.getElementById('promoOptions').style.display = 'none';
+            document.getElementById('discountPercent').value = '';
+            document.getElementById('promotionPrice').value = '';
+            document.querySelector('input[name="promoType"][value="percent"]').checked = true;
+            document.getElementById('percentGroup').style.display = 'block';
+            document.getElementById('fixedPriceGroup').style.display = 'none';
+            document.getElementById('previewPriceDisplay').textContent = '-';
+            document.getElementById('submitBtn').textContent = t.submitAdd;
+            document.getElementById('productModal').classList.add('active');
+        }
+async function openEditModal(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const t = translations[currentLang];
+    document.getElementById('modalTitle').textContent = t.modalEditTitle;
+    document.getElementById('productId').value = product.id;
+    document.getElementById('productNameFr').value = product.name_fr || '';
+    document.getElementById('productNameZh').value = product.name_zh || '';
+    document.getElementById('productCategory').value = product.category;
+    document.getElementById('productPrice').value = product.price;
+    document.getElementById('productQuantity').value = product.quantity || 0;
+    document.getElementById('isPromotion').checked = product.is_promotion === true;
+    
+    if (product.is_promotion) {
+        document.getElementById('promoOptions').style.display = 'block';
+        const discount = product.discount_percent || 0;
+        if (discount > 0) {
+            document.querySelector('input[name="promoType"][value="percent"]').checked = true;
+            document.getElementById('percentGroup').style.display = 'block';
+            document.getElementById('fixedPriceGroup').style.display = 'none';
+            document.getElementById('discountPercent').value = discount;
+        } else if (product.promotion_price) {
+            document.querySelector('input[name="promoType"][value="fixed"]').checked = true;
+            document.getElementById('percentGroup').style.display = 'none';
+            document.getElementById('fixedPriceGroup').style.display = 'block';
+            document.getElementById('promotionPrice').value = product.promotion_price;
+        }
+        calculatePromoPrice();
+    } else {
+        document.getElementById('promoOptions').style.display = 'none';
+    }
+    
+    document.getElementById('submitBtn').textContent = t.submitEdit;
+    if (product.image_url) {
+        const preview = document.getElementById('imagePreview');
+        preview.src = product.image_url;
+        preview.classList.add('show');
+    } else {
+        document.getElementById('imagePreview').classList.remove('show');
+    }
+    document.getElementById('productImage').value = '';
+    document.getElementById('productModal').classList.add('active');
+}
+        function closeModal() { document.getElementById('productModal').classList.remove('active'); }
+
+        function previewImage() {
+            const file = document.getElementById('productImage').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function uploadImage(file) {
+            if (!file) return null;
+            if (file.size > 2 * 1024 * 1024) { showToast('L\'image ne doit pas dépasser 2MB', 'warning'); return null; }
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const { data, error } = await window.supabase.storage.from('product-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+            if (error) { showToast(translations[currentLang].uploadError, 'error'); throw error; }
+            const { data: urlData } = window.supabase.storage.from('product-images').getPublicUrl(fileName);
+            return urlData.publicUrl;
+        }
+
+   async function submitProduct(e) {
+    e.preventDefault();
+    const id = document.getElementById('productId').value;
+    const nameFr = document.getElementById('productNameFr').value.trim();
+    const nameZh = document.getElementById('productNameZh').value.trim();
+    const category = document.getElementById('productCategory').value;
+    const price = parseFloat(document.getElementById('productPrice').value);
+    const quantity = parseInt(document.getElementById('productQuantity').value) || 0;
+    const isPromotion = document.getElementById('isPromotion').checked;
+    const imageFile = document.getElementById('productImage').files[0];
+    const t = translations[currentLang];
+    
+    if (!nameFr || !nameZh) { showToast('Veuillez entrer le nom en français et en chinois', 'warning'); return; }
+    if (isNaN(price) || price < 0) { showToast('Veuillez entrer un prix valide', 'warning'); return; }
+    
+    let promotionPrice = null;
+    let discountPercent = 0;
+    
+    if (isPromotion) {
+        const promoPrice = getPromotionPrice();
+        if (promoPrice === null || promoPrice <= 0) {
+            showToast('Veuillez configurer la promotion correctement', 'warning');
+            return;
+        }
+        promotionPrice = promoPrice;
+        discountPercent = getDiscountPercent();
+    }
+    
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = t.saving;
+    
+    try {
+        let imageUrl = null;
+        if (imageFile) imageUrl = await uploadImage(imageFile);
+        else if (id) { const existing = products.find(p => p.id === id); imageUrl = existing?.image_url; }
+        
+        // 🔧 修改：添加 name 字段（必填）
+        const productData = {
+            name: nameFr,           // 必填字段，使用法语名称
+            name_fr: nameFr,
+            name_zh: nameZh,
+            category: category,
+            price: price,
+            quantity: quantity,
+            is_promotion: isPromotion,
+            discount_percent: discountPercent,
+            promotion_price: promotionPrice,
+            updated_at: new Date()
+        };
+        if (imageUrl) productData.image_url = imageUrl;
+        
+        if (id) {
+            await window.supabase.from('products').update(productData).eq('id', id);
+        } else {
+            productData.created_at = new Date();
+            await window.supabase.from('products').insert([productData]);
+        }
+        await loadProducts();
+        closeModal();
+        showToast(t.saveSuccess, 'success');
+    } catch (err) { 
+        console.error('保存错误:', err);
+        showToast('Erreur: ' + (err.message || err), 'error'); 
+    }
+    finally { submitBtn.disabled = false; submitBtn.textContent = id ? t.submitEdit : t.submitAdd; }
+}
+        window.triggerImageUpload = function(productId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                showToast('Upload en cours...', 'warning');
+                const imageUrl = await uploadSingleImage(productId, file);
+                if (imageUrl) {
+                    await loadProducts();
+                    showToast('Image ajoutée avec succès', 'success');
+                }
+            };
+            input.click();
+        };
+
+        window.updateQuantity = updateQuantity;
+        window.openEditModal = openEditModal;
+        window.deleteProduct = deleteProduct;
+    </script>
+</body>
+</html>

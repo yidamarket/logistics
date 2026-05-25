@@ -511,39 +511,80 @@ window.openNavigation = function(address) {
             });
 
             // ==================== 全局操作函数 ====================
-            window.prepareOrder = async function(orderId) {
-                const confirmed = await showConfirm('Préparer la commande', 'Confirmer la préparation ?');
-                if (!confirmed) return;
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        status: ORDER_STATUS.PREPARE,
-                        prepared_by: currentUser,
-                        prepared_at: new Date().toISOString(),
-                        sms_sent_to_customer: false
-                    })
-                    .eq('id', orderId);
-                if (!error) await loadOrders();
-            };
-
+    window.prepareOrder = async function(orderId) {
+    const confirmed = await showConfirm('Préparer la commande', 'Confirmer la préparation ?');
+    if (!confirmed) return;
+    
+    // 1. 先获取订单信息，检查是否有 source_order_id
+    const { data: order } = await supabase
+        .from('orders')
+        .select('source_order_id')
+        .eq('id', orderId)
+        .single();
+    
+    // 2. 更新 orders 表
+    const { error: orderError } = await supabase
+        .from('orders')
+        .update({
+            status: 'prepare',
+            prepared_by: currentUser,
+            prepared_at: new Date().toISOString(),
+            sms_sent_to_customer: false
+        })
+        .eq('id', orderId);
+    
+    if (orderError) {
+        console.error('更新订单失败:', orderError);
+        return;
+    }
+    
+    // 3. 如果有 source_order_id，手动同步到 customer_orders
+    if (order?.source_order_id) {
+        await supabase
+            .from('customer_orders')
+            .update({
+                status: 'confirmed',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', order.source_order_id);
+    }
+    
+    await loadOrders();
+};
             window.departOrder = async function(orderId) {
-                const confirmed = await showConfirm('Démarrer la livraison', 'Confirmer le départ ?');
-                if (!confirmed) return;
-                
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        status: ORDER_STATUS.EN_COURS,
-                        driver_departure_at: new Date().toISOString(),
-                        sms_sent_to_customer: false
-                    })
-                    .eq('id', orderId);
-                    
-                if (!error) {
-                    await loadOrders();
-                }
-            };
-
+    const confirmed = await showConfirm('Démarrer la livraison', 'Confirmer le départ ?');
+    if (!confirmed) return;
+    
+    // 获取 source_order_id
+    const { data: order } = await supabase
+        .from('orders')
+        .select('source_order_id')
+        .eq('id', orderId)
+        .single();
+    
+    const { error } = await supabase
+        .from('orders')
+        .update({
+            status: ORDER_STATUS.EN_COURS,
+            driver_departure_at: new Date().toISOString(),
+            sms_sent_to_customer: false
+        })
+        .eq('id', orderId);
+        
+    if (!error) {
+        // 同步到 customer_orders
+        if (order?.source_order_id) {
+            await supabase
+                .from('customer_orders')
+                .update({ 
+                    status: 'confirmed',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', order.source_order_id);
+        }
+        await loadOrders();
+    }
+};
             window.openSignatureModal = function(orderId) {
                 currentOrderId = orderId;
                 signatureModal.style.display = 'flex';
@@ -723,22 +764,68 @@ window.openNavigation = function(address) {
                 }
             };
 
-            window.deleteUser = async function(username) {
-                if (!hasFullAccess()) return;
-                const confirmed = await showConfirm('Supprimer', `Supprimer ${username} ?`);
-                if (!confirmed) return;
-                const { error } = await supabase
-                    .from('users')
-                    .delete()
-                    .eq('username', username);
-                if (!error) {
-                    await loadUsers();
-                    await loadDrivers();
-                    await loadTaskAssignees();
-                    await loadAdminDrivers();
-                }
-            };
-
+window.deleteUser = async function(username) {
+    if (!hasFullAccess()) return;
+    
+    const confirmed = await showConfirm('Supprimer', `Supprimer ${username} ? Toutes ses données seront effacées.`);
+    if (!confirmed) return;
+    
+    // 1. 先获取用户ID
+    const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .single();
+    
+    if (userError || !user) {
+        alert('Utilisateur non trouvé');
+        return;
+    }
+    
+    const userId = user.id;
+    
+    // 2. 删除关联数据（按顺序，避免外键冲突）
+    console.log(`正在删除用户 ${username} (${userId}) 的关联数据...`);
+    
+    // overtime_requests - 两个外键字段都需要清理
+    await supabase.from('overtime_requests').delete().eq('user_id', userId);
+    await supabase.from('overtime_requests').delete().eq('approver_id', userId);
+    
+    // 请假相关
+    await supabase.from('leave_requests').delete().eq('user_id', userId);
+    
+    // 打卡相关
+    await supabase.from('attendance_records').delete().eq('user_id', userId);
+    await supabase.from('attendance_overrides').delete().eq('user_id', userId);
+    
+    // 任务相关
+    await supabase.from('tasks').delete().eq('assigned_to', username);
+    await supabase.from('tasks').delete().eq('created_by', username);
+    
+    // 订单相关
+    await supabase.from('orders').delete().eq('driver', username);
+    await supabase.from('orders').delete().eq('created_by', username);
+    
+    // 运输相关
+    await supabase.from('transports').delete().eq('created_by', username);
+    
+    // 3. 最后删除用户
+    const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('username', username);
+    
+    if (!error) {
+        await loadUsers();
+        await loadDrivers();
+        await loadTaskAssignees();
+        await loadAdminDrivers();
+        showToast(`✅ ${username} supprimé`, 'success');
+    } else {
+        console.error('删除用户失败:', error);
+        alert('Erreur: ' + error.message);
+    }
+};
             window.viewSignature = function(signatureData) {
                 viewSignatureImage.src = signatureData;
                 viewSignatureModal.style.display = 'flex';
@@ -1899,7 +1986,7 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
             </div>
             <div class="order-details">
                 <div>📍 ${escapeHtml(order.destination)}</div>
-                <div>⏰ ${timeDisplay}</div>
+                <div>⏰ ${order.delivery_time_slot || timeDisplay}</div>
                 ${order.phone ? `<div>📱 ${escapeHtml(order.phone)}</div>` : ''}
             </div>
             <div class="order-meta">
@@ -2333,35 +2420,51 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
                 signaturePad?.clear();
             });
 
-            saveSignatureBtn.addEventListener('click', async () => {
-                if (!currentOrderId || !signaturePad || signaturePad.isEmpty()) {
-                    alert('Signez svp');
-                    return;
-                }
-                
-                const confirmed = await showConfirm('Valider', 'Confirmer la livraison ?');
-                if (!confirmed) return;
-                
-                const signatureData = signaturePad.toDataURL();
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        status: ORDER_STATUS.LIVRE,
-                        delivered_at: new Date().toISOString(),
-                        signature: signatureData
-                    })
-                    .eq('id', currentOrderId);
-                    
-                if (!error) {
-                    allNonDeliveredOrders = allNonDeliveredOrders.filter(o => o.id !== currentOrderId);
-                    
-                    signatureModal.style.display = 'none';
-                    currentOrderId = null;
-                    signaturePad.clear();
-                    await loadOrders();
-                }
-            });
-
+         saveSignatureBtn.addEventListener('click', async () => {
+    if (!currentOrderId || !signaturePad || signaturePad.isEmpty()) {
+        alert('Signez svp');
+        return;
+    }
+    
+    const confirmed = await showConfirm('Valider', 'Confirmer la livraison ?');
+    if (!confirmed) return;
+    
+    // 获取 source_order_id
+    const { data: order } = await supabase
+        .from('orders')
+        .select('source_order_id')
+        .eq('id', currentOrderId)
+        .single();
+    
+    const signatureData = signaturePad.toDataURL();
+    const { error } = await supabase
+        .from('orders')
+        .update({
+            status: ORDER_STATUS.LIVRE,
+            delivered_at: new Date().toISOString(),
+            signature: signatureData
+        })
+        .eq('id', currentOrderId);
+        
+    if (!error) {
+        // 同步到 customer_orders
+        if (order?.source_order_id) {
+            await supabase
+                .from('customer_orders')
+                .update({ 
+                    status: 'delivered',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', order.source_order_id);
+        }
+        
+        allNonDeliveredOrders = allNonDeliveredOrders.filter(o => o.id !== currentOrderId);
+        signatureModal.style.display = 'none';
+        currentOrderId = null;
+        signaturePad.clear();
+        await loadOrders();
+    }
+});
             function getTimeValue() {
                 const type = timeType.value;
                 if (type === 'fixed') {
