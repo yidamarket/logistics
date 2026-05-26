@@ -2274,13 +2274,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (!session) session = window.loadSession();
     if (!session) { window.location.href = '../index.html'; return; }
-    if (!window.canAccessAdmin || !window.canAccessAdmin(session.userType)) {
-        document.body.innerHTML = '<div style="text-align:center;padding:80px;"><h2>Accès non autorisé</h2><p>Seuls les administrateurs et managers peuvent accéder à cette page.</p><a href="../../index.html">Retour</a></div>';
+    // ========== 权限检查（管理员/经理/秘书/普通员工均可访问） ==========
+ // ========== 权限检查（管理员/经理/秘书/普通员工均可访问） ==========
+    const allowedAdminTypes = ['admin', 'manager', 'secretaire', 'employe'];
+    if (!allowedAdminTypes.includes(session.userType)) {
+        document.body.innerHTML = '<div style="text-align:center;padding:80px;"><h2>⛔ Accès non autorisé</h2><p>Seuls les administrateurs, managers, secrétaires et employés peuvent accéder à cette page.</p><a href="../../index.html">Retour</a></div>';
         return;
     }
     currentUser = session;
     document.getElementById('userName').textContent = session.username;
-    const roleLabels = { admin: currentLang === 'fr' ? 'Administrateur' : '管理员', manager: currentLang === 'fr' ? 'Manager' : '经理' };
+    
+    const roleLabels = { 
+    admin: currentLang === 'fr' ? 'Administrateur' : '管理员', 
+    manager: currentLang === 'fr' ? 'Manager' : '经理',
+    secretaire: currentLang === 'fr' ? 'Secrétaire générale' : '秘书长',
+    employe: currentLang === 'fr' ? 'Employé' : '普通员工'
+};
     document.getElementById('userRole').textContent = roleLabels[session.userType] || session.userType;
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
