@@ -903,50 +903,82 @@
                     document.getElementById('loginBtn').click();
                 }
             });
-
             function showApps(session) {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('apps').style.display = 'block';
-                document.getElementById('userName').textContent = session.username;
-                const typeLabels = {
-                    'admin': currentLang === 'fr' ? 'Administrateur' : '管理员',
-                    'manager': currentLang === 'fr' ? 'Manager' : '经理',
-                    'secretaire': currentLang === 'fr' ? 'Secrétaire générale' : '秘书长',
-                    'preparateur': currentLang === 'fr' ? 'Préparateur' : '备货员',
-                    'chauffeur': currentLang === 'fr' ? 'Chauffeur' : '司机',
-                    'responsable': currentLang === 'fr' ? 'Responsable' : '负责人'
-                };
-                document.getElementById('userTypeBadge').textContent = typeLabels[session.userType] || session.userType;
-                const avatars = {
-                    'admin': '👨‍💼', 'manager': '👔', 'secretaire': '📋',
-                    'preparateur': '📦', 'chauffeur': '🚚', 'responsable': '👤'
-                };
-                document.getElementById('userAvatar').textContent = avatars[session.userType] || '👤';
-                const sessionParam = encodeURIComponent(JSON.stringify(session));
-                document.getElementById('transportLink').href = `transport.html?session=${sessionParam}&lang=${currentLang}`;
-                document.getElementById('rhLink').href = `rh.html?session=${sessionParam}&lang=${currentLang}`;
-                document.getElementById('stockLink').href = `stock.html?session=${sessionParam}&lang=${currentLang}`;
-                
-                const adminLink = document.getElementById('adminLink');
-                if (session.userType === 'admin' || session.userType === 'manager'|| session.userType === 'secretaire') {
-                    adminLink.style.display = 'flex';
-                    adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
-                } else {
-                    adminLink.style.display = 'none';
-                }
-                
-                const t = translations[currentLang];
-                document.getElementById('transportTitle').textContent = t.transportTitle;
-                document.getElementById('transportDesc').textContent = t.transportDesc;
-                document.getElementById('rhTitle').textContent = t.rhTitle;
-                document.getElementById('rhDesc').textContent = t.rhDesc;
-                document.getElementById('stockTitle').textContent = t.stockTitle;
-                document.getElementById('stockDesc').textContent = t.stockDesc;
-                document.getElementById('adminTitle').textContent = t.adminTitle;
-                document.getElementById('adminDesc').textContent = t.adminDesc;
-                document.getElementById('logoutBtn').textContent = t.logoutBtn;
-            }
-
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('apps').style.display = 'block';
+    document.getElementById('userName').textContent = session.username;
+    
+    const typeLabels = {
+        'admin': currentLang === 'fr' ? 'Administrateur' : '管理员',
+        'manager': currentLang === 'fr' ? 'Manager' : '经理',
+        'secretaire': currentLang === 'fr' ? 'Secrétaire générale' : '秘书长',
+        'preparateur': currentLang === 'fr' ? 'Préparateur' : '备货员',
+        'chauffeur': currentLang === 'fr' ? 'Chauffeur' : '司机',
+        'responsable': currentLang === 'fr' ? 'Responsable' : '负责人',
+        'employe': currentLang === 'fr' ? 'Employé' : '普通员工'
+    };
+    document.getElementById('userTypeBadge').textContent = typeLabels[session.userType] || session.userType;
+    
+    const avatars = {
+        'admin': '👨‍💼',
+        'manager': '👔',
+        'secretaire': '📋',
+        'preparateur': '📦',
+        'chauffeur': '🚚',
+        'responsable': '👤',
+        'employe': '🧑‍💼'
+    };
+    document.getElementById('userAvatar').textContent = avatars[session.userType] || '👤';
+    
+    const sessionParam = encodeURIComponent(JSON.stringify(session));
+    
+    // 更新所有链接
+    document.getElementById('transportLink').href = `transport.html?session=${sessionParam}&lang=${currentLang}`;
+    document.getElementById('rhLink').href = `rh.html?session=${sessionParam}&lang=${currentLang}`;
+    document.getElementById('stockLink').href = `stock.html?session=${sessionParam}&lang=${currentLang}`;
+    
+    // ========== 普通员工只能看到人力资源和后台管理 ==========
+    const transportCard = document.getElementById('transportLink');
+    const rhCard = document.getElementById('rhLink');
+    const stockCard = document.getElementById('stockLink');
+    const adminLink = document.getElementById('adminLink');
+    
+    if (session.userType === 'employe') {
+        // 普通员工：只显示人力资源和管理后台
+        transportCard.style.display = 'none';
+        rhCard.style.display = 'flex';
+        stockCard.style.display = 'none';
+        
+        // 普通员工也可以进入管理后台
+        adminLink.style.display = 'flex';
+        adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
+    } else if (session.userType === 'admin' || session.userType === 'manager' || session.userType === 'secretaire') {
+        // 管理员/经理/秘书：显示所有模块 + 管理后台
+        transportCard.style.display = 'flex';
+        rhCard.style.display = 'flex';
+        stockCard.style.display = 'flex';
+        adminLink.style.display = 'flex';
+        adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
+    } else {
+        // 其他角色（preparateur、chauffeur、responsable）：只显示三个主模块，不显示管理后台
+        transportCard.style.display = 'flex';
+        rhCard.style.display = 'flex';
+        stockCard.style.display = 'flex';
+        adminLink.style.display = 'none';
+    }
+    
+    // 更新多语言文本
+    const t = translations[currentLang];
+    document.getElementById('transportTitle').textContent = t.transportTitle;
+    document.getElementById('transportDesc').textContent = t.transportDesc;
+    document.getElementById('rhTitle').textContent = t.rhTitle;
+    document.getElementById('rhDesc').textContent = t.rhDesc;
+    document.getElementById('stockTitle').textContent = t.stockTitle;
+    document.getElementById('stockDesc').textContent = t.stockDesc;
+    document.getElementById('adminTitle').textContent = t.adminTitle;
+    document.getElementById('adminDesc').textContent = t.adminDesc;
+    document.getElementById('logoutBtn').textContent = t.logoutBtn;
+}
             document.getElementById('logoutBtn').addEventListener('click', () => {
                 window.clearSession();
                 document.getElementById('loginForm').style.display = 'block';

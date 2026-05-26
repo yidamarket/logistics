@@ -41,7 +41,8 @@
                 'secretaire': 'Secrétaire générale',
                 'preparateur': 'Préparateur',
                 'chauffeur': 'Chauffeur',
-                'responsable': 'Responsable'
+                'responsable': 'Responsable',
+                'employe': 'Employé'
             };
             document.getElementById('currentUserDisplay').innerText = `👤 ${currentUser}`;
             document.getElementById('userTypeDisplay').innerText = `(${typeLabels[currentUserType] || currentUserType})`;
