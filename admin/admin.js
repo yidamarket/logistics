@@ -1241,54 +1241,7 @@ function renderMobileClients() {
     `;
     }).join('');
 }
-function showAddPromotionModal() {
-    document.getElementById('promotionModalTitle').textContent = translations[currentLang].navPromotions;
-    document.getElementById('promotionId').value = '';
-    document.getElementById('promotionForm').reset();
-    document.getElementById('needCoupon').checked = false;
-    document.getElementById('couponFields').style.display = 'none';
-    document.getElementById('discountFields').style.display = 'block';
-    document.getElementById('spendReduceFields').style.display = 'none';
-    document.getElementById('pointsMultiplierFields').style.display = 'none';
-    document.getElementById('freeShippingFields').style.display = 'none';
-    document.getElementById('buyNGetMFields').style.display = 'none';
-    document.getElementById('promoActive').checked = true;
-    
-    // 清空商品选择
-    const productSelect = document.getElementById('applicableProducts');
-    if (productSelect) {
-        for (let i = 0; i < productSelect.options.length; i++) {
-            productSelect.options[i].selected = false;
-        }
-    }
-    
-    // 设置默认值
-    const buyNInput = document.getElementById('buyN');
-    if (buyNInput) buyNInput.value = 3;
-    const getMInput = document.getElementById('getM');
-    if (getMInput) getMInput.value = 1;
-    
-    const now = new Date();
-    const startDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000 - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('startDate').value = startDate;
-    document.getElementById('endDate').value = endDate;
-    
-    // 重置适用分类（默认全选）
-    const categoryCheckboxes = document.querySelectorAll('#promotionsPanel .checkbox-group input[type="checkbox"]');
-    categoryCheckboxes.forEach(cb => {
-        cb.checked = cb.value === 'all';
-    });
-    
-    // 重置适用用户（默认全部）
-    const allUserRadio = document.querySelector('input[name="applicableUsers"][value="all"]');
-    if (allUserRadio) allUserRadio.checked = true;
-    
-    // 加载商品列表
-    loadProductsForPromotion();
-    
-    document.getElementById('promotionModal').classList.add('active');
-}
+
 async function editPromotion(promoId) {
     const promo = promotions.find(p => p.id === promoId);
     if (!promo) return;
@@ -1329,50 +1282,69 @@ async function editPromotion(promoId) {
     document.getElementById('startDate').value = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('endDate').value = new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     
-    // 适用分类
-    if (promo.applicable_categories && Array.isArray(promo.applicable_categories)) {
-        document.querySelectorAll('#promotionsPanel .checkbox-group input[type="checkbox"]').forEach(cb => {
-            cb.checked = false;
-        });
-        promo.applicable_categories.forEach(cat => {
-            const cb = document.querySelector(`#promotionsPanel .checkbox-group input[value="${cat}"]`);
-            if (cb) cb.checked = true;
-        });
-        if (promo.applicable_categories.length === 0) {
-            const allCb = document.querySelector('#promotionsPanel .checkbox-group input[value="all"]');
-            if (allCb) allCb.checked = true;
+    // 先触发类型切换，显示正确的界面
+    onPromoTypeChange();
+    
+    // 等待DOM更新后，再填充适用范围
+    setTimeout(() => {
+        if (promo.type === 'buy_n_get_m') {
+            // 买N送M：选中已保存的商品
+            if (promo.applicable_products && Array.isArray(promo.applicable_products)) {
+                const productSelect = document.getElementById('applicableProducts');
+                if (productSelect) {
+                    for (let i = 0; i < productSelect.options.length; i++) {
+                        const option = productSelect.options[i];
+                        if (promo.applicable_products.includes(option.value)) {
+                            option.selected = true;
+                        }
+                    }
+                }
+            }
+        } else {
+            // 其他类型：选中已保存的分类（使用正确的ID categoriesGroup）
+            if (promo.applicable_categories && Array.isArray(promo.applicable_categories)) {
+                // 先全部取消选中
+                document.querySelectorAll('#categoriesGroup input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                // 选中已保存的分类
+                promo.applicable_categories.forEach(cat => {
+                    const cb = document.querySelector(`#categoriesGroup input[value="${cat}"]`);
+                    if (cb) cb.checked = true;
+                });
+                // 如果没有选择任何分类，默认选"全部"
+                if (promo.applicable_categories.length === 0) {
+                    const allCb = document.querySelector('#categoriesGroup input[value="all"]');
+                    if (allCb) allCb.checked = true;
+                }
+            } else {
+                // 如果没有保存的分类，默认选"全部"
+                const allCb = document.querySelector('#categoriesGroup input[value="all"]');
+                if (allCb) allCb.checked = true;
+            }
         }
-    }
+    }, 100);
     
     // 适用用户
     const isNewUsersOnly = promo.applicable_users && promo.applicable_users.includes('new');
     const userRadio = document.querySelector(`input[name="applicableUsers"][value="${isNewUsersOnly ? 'new' : 'all'}"]`);
     if (userRadio) userRadio.checked = true;
     
-    // 加载商品列表并选中已保存的商品
-    await loadProductsForPromotion();
-    if (promo.applicable_products && Array.isArray(promo.applicable_products)) {
-        const productSelect = document.getElementById('applicableProducts');
-        if (productSelect) {
-            for (let i = 0; i < productSelect.options.length; i++) {
-                const option = productSelect.options[i];
-                if (promo.applicable_products.includes(option.value)) {
-                    option.selected = true;
-                }
-            }
-        }
-    }
-    
-    onPromoTypeChange();
     document.getElementById('promotionModal').classList.add('active');
 }
+
 function onPromoTypeChange() {
     const type = document.getElementById('promoType').value;
+    
+    // 显示/隐藏各类型特定字段
     document.getElementById('discountFields').style.display = type === 'discount' ? 'block' : 'none';
     document.getElementById('spendReduceFields').style.display = type === 'spend_reduce' ? 'block' : 'none';
     document.getElementById('pointsMultiplierFields').style.display = type === 'points_multiplier' ? 'block' : 'none';
     document.getElementById('freeShippingFields').style.display = type === 'free_shipping' ? 'block' : 'none';
     document.getElementById('buyNGetMFields').style.display = type === 'buy_n_get_m' ? 'block' : 'none';
+    
+    // 切换适用范围显示
+    toggleApplicableFields();
 }
 // 加载商品列表用于促销选择
 async function loadProductsForPromotion() {
@@ -1386,9 +1358,9 @@ async function loadProductsForPromotion() {
         
         const select = document.getElementById('applicableProducts');
         if (select && data) {
-            const t = translations[currentLang];
+            const isFrench = currentLang === 'fr';
             select.innerHTML = data.map(product => {
-                const name = currentLang === 'fr' ? product.name_fr : product.name_zh;
+                const name = isFrench ? product.name_fr : product.name_zh;
                 return `<option value="${product.id}">${escapeHtml(name || product.id)}</option>`;
             }).join('');
             
@@ -1408,15 +1380,14 @@ async function savePromotion(e) {
     const nameZh = document.getElementById('promoNameZh').value.trim();
     const type = document.getElementById('promoType').value;
     const needCoupon = document.getElementById('needCoupon').checked;
-    let couponCode = null;  // 改成 null
+    let couponCode = null;
     if (needCoupon) {
-            couponCode = document.getElementById('couponCode').value.trim();
-            if (!couponCode) {
-                couponCode = generateCouponCode();
-            }
+        couponCode = document.getElementById('couponCode').value.trim();
+        if (!couponCode) {
+            couponCode = generateCouponCode();
         }
-        // 不需要优惠码时，couponCode 保持 null
-   
+    }
+    
     const usageLimit = parseInt(document.getElementById('usageLimit').value) || 0;
     const perUserLimit = parseInt(document.getElementById('perUserLimit').value) || 1;
     const stackable = document.getElementById('stackable').checked;
@@ -1424,25 +1395,38 @@ async function savePromotion(e) {
     const startDate = new Date(document.getElementById('startDate').value);
     const endDate = new Date(document.getElementById('endDate').value);
     
-    // 获取适用分类
-    const applicableCategories = [];
-    document.querySelectorAll('#promotionsPanel .checkbox-group input[type="checkbox"]:checked').forEach(cb => {
-        if (cb.value !== 'all') applicableCategories.push(cb.value);
-    });
+    // 根据促销类型获取适用范围
+    let applicableCategories = [];
+    let applicableProducts = null;
+    
+    if (type === 'buy_n_get_m') {
+        // 买N送M：选择具体商品
+        const productSelect = document.getElementById('applicableProducts');
+        applicableProducts = [];
+        if (productSelect) {
+            for (let i = 0; i < productSelect.options.length; i++) {
+                if (productSelect.options[i].selected && productSelect.options[i].value) {
+                    applicableProducts.push(productSelect.options[i].value);
+                }
+            }
+        }
+        if (applicableProducts.length === 0) {
+            showToast(currentLang === 'fr' ? 'Veuillez sélectionner au moins un produit' : '请至少选择一个商品', 'warning');
+            return;
+        }
+        applicableCategories = [];
+    } else {
+        // 其他类型：选择分类（使用正确的ID categoriesGroup）
+        document.querySelectorAll('#categoriesGroup input[type="checkbox"]:checked').forEach(cb => {
+            if (cb.value !== 'all') {
+                applicableCategories.push(cb.value);
+            }
+        });
+        applicableProducts = null;
+    }
     
     // 获取适用用户
     const applicableUsers = document.querySelector('input[name="applicableUsers"]:checked')?.value === 'new' ? ['new'] : ['all'];
-    
-    // 获取适用商品
-    const productSelect = document.getElementById('applicableProducts');
-    const applicableProducts = [];
-    if (productSelect) {
-        for (let i = 0; i < productSelect.options.length; i++) {
-            if (productSelect.options[i].selected && productSelect.options[i].value) {
-                applicableProducts.push(productSelect.options[i].value);
-            }
-        }
-    }
     
     // 构建数据对象
     const promoData = {
@@ -1459,7 +1443,7 @@ async function savePromotion(e) {
         end_date: endDate,
         applicable_categories: applicableCategories,
         applicable_users: applicableUsers,
-        applicable_products: applicableProducts.length > 0 ? applicableProducts : null
+        applicable_products: applicableProducts
     };
     
     // 根据类型添加字段
@@ -1556,7 +1540,6 @@ async function savePromotion(e) {
         showToast(currentLang === 'fr' ? 'Erreur: ' + (err.message || err) : '错误: ' + (err.message || err), 'error');
     }
 }
-
 async function deletePromotion(promoId) {
     showConfirm('Confirmation', 'Supprimer cette promotion ?', async () => {
         try {
@@ -1568,7 +1551,61 @@ async function deletePromotion(promoId) {
         }
     });
 }
+// 商品搜索过滤
+function filterProductsList() {
+    const searchTerm = document.getElementById('productSearchInput').value.toLowerCase();
+    const productSelect = document.getElementById('applicableProducts');
+    
+    if (!productSelect) return;
+    
+    for (let i = 0; i < productSelect.options.length; i++) {
+        const option = productSelect.options[i];
+        const text = option.text.toLowerCase();
+        if (searchTerm === '' || text.includes(searchTerm)) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    }
+}
 
+// 全选/取消全选商品
+function toggleAllProducts(selectAll) {
+    const productSelect = document.getElementById('applicableProducts');
+    if (!productSelect) return;
+    
+    for (let i = 0; i < productSelect.options.length; i++) {
+        productSelect.options[i].selected = selectAll;
+    }
+}
+
+// 根据促销类型切换适用范围显示
+// 根据促销类型切换适用范围显示
+function toggleApplicableFields() {
+    const type = document.getElementById('promoType').value;
+    const productsGroup = document.getElementById('productsGroup');
+    const categoriesGroup = document.getElementById('categoriesGroup');
+    
+    if (type === 'buy_n_get_m') {
+        // 买N送M：显示商品选择，隐藏分类选择
+        if (productsGroup) productsGroup.style.display = 'block';
+        if (categoriesGroup) categoriesGroup.style.display = 'none';
+    } else {
+        // 其他类型：显示分类选择，隐藏商品选择
+        if (productsGroup) productsGroup.style.display = 'none';
+        if (categoriesGroup) categoriesGroup.style.display = 'block';
+        // 清空商品选择
+        const productSelect = document.getElementById('applicableProducts');
+        if (productSelect) {
+            for (let i = 0; i < productSelect.options.length; i++) {
+                productSelect.options[i].selected = false;
+            }
+        }
+        // 清空搜索框
+        const searchInput = document.getElementById('productSearchInput');
+        if (searchInput) searchInput.value = '';
+    }
+}
 // ========== 积分配置 ==========
 async function loadPointsConfig() {
     try {
@@ -1960,7 +1997,62 @@ function exportCSV() {
     URL.revokeObjectURL(link.href);
     showToast('Exporté', 'success');
 }
-
+function showAddPromotionModal() {
+    document.getElementById('promotionModalTitle').textContent = translations[currentLang].navPromotions;
+    document.getElementById('promotionId').value = '';
+    document.getElementById('promotionForm').reset();
+    document.getElementById('needCoupon').checked = false;
+    document.getElementById('couponFields').style.display = 'none';
+    document.getElementById('discountFields').style.display = 'block';
+    document.getElementById('spendReduceFields').style.display = 'none';
+    document.getElementById('pointsMultiplierFields').style.display = 'none';
+    document.getElementById('freeShippingFields').style.display = 'none';
+    document.getElementById('buyNGetMFields').style.display = 'none';
+    document.getElementById('promoActive').checked = true;
+    
+    // 清空商品选择
+    const productSelect = document.getElementById('applicableProducts');
+    if (productSelect) {
+        for (let i = 0; i < productSelect.options.length; i++) {
+            productSelect.options[i].selected = false;
+        }
+    }
+    
+    // 重置分类复选框（默认全选，表示不限制分类）
+    const categoryCheckboxes = document.querySelectorAll('#promotionsPanel .checkbox-group input[type="checkbox"]');
+    categoryCheckboxes.forEach(cb => {
+        cb.checked = cb.value === 'all';
+    });
+    
+    // 重置适用用户（默认全部）
+    const allUserRadio = document.querySelector('input[name="applicableUsers"][value="all"]');
+    if (allUserRadio) allUserRadio.checked = true;
+    
+    // 设置默认日期
+    const now = new Date();
+    const startDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000 - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('startDate').value = startDate;
+    document.getElementById('endDate').value = endDate;
+    
+    // 确保适用范围显示正确（买N送M显示商品选择，其他显示分类选择）
+    const type = document.getElementById('promoType').value;
+    const categoriesGroup = document.getElementById('categoriesGroup');
+    const productsGroup = document.getElementById('productsGroup');
+    
+    if (type === 'buy_n_get_m') {
+        if (categoriesGroup) categoriesGroup.style.display = 'none';
+        if (productsGroup) productsGroup.style.display = 'block';
+    } else {
+        if (categoriesGroup) categoriesGroup.style.display = 'block';
+        if (productsGroup) productsGroup.style.display = 'none';
+    }
+    
+    // 加载商品列表
+    loadProductsForPromotion();
+    
+    document.getElementById('promotionModal').classList.add('active');
+}
 function updateUILanguage() {
     const t = translations[currentLang];
     

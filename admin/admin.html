@@ -454,30 +454,34 @@
                 </div>
                 <button type="button" class="btn-small" id="generateCouponBtn">🎲 Générer un code</button>
             </div>
-            
-            <!-- 适用分类 -->
-            <div class="form-group">
-                <label id="categoriesLabel">Catégories concernées</label>
-                <div class="checkbox-group" id="categoriesGroup">
-                    <label><input type="checkbox" value="dry" class="category-checkbox"> 🥨 Sec</label>
-                    <label><input type="checkbox" value="frozen" class="category-checkbox"> ❄️ Surgelé</label>
-                    <label><input type="checkbox" value="fresh" class="category-checkbox"> 🥬 Frais</label>
-                    <label><input type="checkbox" value="nonfood" class="category-checkbox"> 🧴 Non-alimentaire</label>
-                    <label><input type="checkbox" value="drinks" class="category-checkbox"> 🍷 Boissons</label>
-                    <label><input type="checkbox" value="bangkok" class="category-checkbox"> 🏭 Bangkok Factory</label>
-                    <label><input type="checkbox" value="all" id="allCategories" class="category-checkbox"> Tous</label>
-                </div>
-            </div>
-            
-            <!-- 适用用户 -->
-           <!-- 适用商品 -->
-            <div class="form-group">
-                <label id="applicableProductsLabel">📦 Produits concernés</label>
-                <select id="applicableProducts" class="form-input" multiple size="6" style="height: auto; min-height: 150px;">
-                    <option value="">Chargement des produits...</option>
-                </select>
-                <small>Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs produits. Laissez vide pour appliquer à tous.</small>
-            </div>
+            <!-- 适用分类（其他类型用） -->
+<div id="categoriesGroupDiv" class="form-group">
+    <label id="categoriesLabel">Catégories concernées</label>
+    <div class="checkbox-group" id="categoriesGroup">
+        <label><input type="checkbox" value="dry" class="category-checkbox"> 🥨 Sec</label>
+        <label><input type="checkbox" value="frozen" class="category-checkbox"> ❄️ Surgelé</label>
+        <label><input type="checkbox" value="fresh" class="category-checkbox"> 🥬 Frais</label>
+        <label><input type="checkbox" value="nonfood" class="category-checkbox"> 🧴 Non-alimentaire</label>
+        <label><input type="checkbox" value="drinks" class="category-checkbox"> 🍷 Boissons</label>
+        <label><input type="checkbox" value="bangkok" class="category-checkbox"> 🏭 Bangkok Factory</label>
+        <label><input type="checkbox" value="all" id="allCategories" class="category-checkbox"> Tous</label>
+    </div>
+</div>
+
+<!-- 适用商品（买N送M专用） -->
+<div id="productsGroup" class="form-group" style="display: none;">
+    <label id="applicableProductsLabel">📦 Produits concernés</label>
+    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <input type="text" id="productSearchInput" class="form-input" placeholder="🔍 Rechercher un produit..." style="flex: 1;" oninput="filterProductsList()">
+        <button type="button" class="btn-small" onclick="toggleAllProducts(true)" style="background: #e2e8f0; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer;">Tous</button>
+        <button type="button" class="btn-small" onclick="toggleAllProducts(false)" style="background: #e2e8f0; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer;">Aucun</button>
+    </div>
+    <select id="applicableProducts" class="form-input" multiple size="8" style="height: auto; min-height: 200px;">
+        <option value="">Chargement des produits...</option>
+    </select>
+    <small>Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs produits.</small>
+</div>
+        
             
             <!-- 叠加规则 -->
             <div class="form-group">

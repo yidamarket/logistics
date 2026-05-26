@@ -1581,3 +1581,26 @@
     min-width: 20px;
     text-align: center;
 }
+/* 促销模态框中的商品搜索区域 */
+#productsGroup {
+    margin-top: 16px;
+}
+
+#productSearchInput {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-small:hover {
+    background: #cbd5e1 !important;
+}
