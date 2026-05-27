@@ -1149,3 +1149,23 @@ body {
     color: white;
     font-weight: bold;
 }
+/* 异常状态样式 - 日历中用橙色/红色警告 */
+.status-abnormal {
+    background: #ff9800;
+    color: white;
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px white;
+}
+
+.status-abnormal:hover {
+    background: #f57c00;
+    transform: scale(1.05);
+}

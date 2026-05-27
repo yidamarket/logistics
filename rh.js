@@ -159,6 +159,9 @@ const translationsData = {
         confirm_request_cancel_title: '申请取消',
         confirm_request_cancel_message: '确定要申请取消这个已批准的假期吗？',
         waiting_approval: '等待审批',
+           missing_checkout: '❌ 缺少下班打卡',
+        check_in_time: '默认下班时间',
+        confirm_normal: '确认为正常',
         
         // 打卡
         check_in: '✅ 上班打卡',
@@ -271,7 +274,9 @@ const translationsData = {
     en: {
         // Roles
         no_abnormal_records: 'No abnormal hours records',
-
+        missing_checkout: '❌ Missing check-out',
+        check_in_time: 'Default check-out time',
+        confirm_normal: 'Confirm Normal',
         request_cancel_success: 'Cancellation request submitted, waiting for admin approval',
         request_cancel_failed: 'Request failed',
         admin: 'Admin',
@@ -395,6 +400,9 @@ const translationsData = {
     
     fr: {
         // Rôles
+         missing_checkout: '❌ Pointage de fin manquant',
+        check_in_time: 'Heure de départ par défaut',
+        confirm_normal: 'Confirmer normal',
         no_abnormal_records: 'Aucune heure anormale',
         request_cancel_success: 'Demande d\'annulation soumise, en attente d\'approbation',
         request_cancel_failed: 'Échec de la demande',
@@ -1502,9 +1510,9 @@ window.approveLeave = async function(id, daysCount, leaveTypeName) {
 async function loadAbnormalHours() {
     if (!isManager) return;
     
-    const { data } = await supabase
+    const { data, error } = await supabase
         .from('attendance_records')
-        .select('*, user:users(username, user_type)')
+        .select('*')
         .eq('need_review', true)
         .eq('action_type', 'check_out')
         .order('record_date', { ascending: false });
@@ -1513,30 +1521,81 @@ async function loadAbnormalHours() {
     
     if (!container) return;
     
+    if (error) {
+        console.error('加载工时异常失败:', error);
+        container.innerHTML = '<div class="empty-state">❌ ' + t('error') + '</div>';
+        return;
+    }
+    
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="empty-state">✅ ' + t('no_abnormal_records') + '</div>';
         return;
     }
     
     container.innerHTML = data.map(function(r) {
+        // 判断是否是缺少下班打卡
+        let isMissingCheckout = (r.work_hours === 0 || r.status === 'missing_checkout');
+        let abnormalReason = '';
+        
+        if (isMissingCheckout) {
+            abnormalReason = t('missing_checkout');
+        } else {
+            abnormalReason = t('work_hours_insufficient') + ' (' + (r.work_hours || 0).toFixed(1) + 'h)';
+        }
+        
+        let checkInTimeDisplay = '';
+        if (r.action_time) {
+            const timeStr = new Date(r.action_time).toLocaleTimeString(
+                currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'fr' ? 'fr-FR' : 'en-US',
+                { hour: '2-digit', minute: '2-digit' }
+            );
+            checkInTimeDisplay = '<div><strong>' + t('check_in_time') + ':</strong> ' + timeStr + '</div>';
+        }
+        
         return '<div class="leave-request-card en_attente">' +
             '<div class="request-header">' +
-                '<span class="request-user">👤 ' + (r.user?.username || '未知') + ' (' + (r.user?.user_type || '?') + ')</span>' +
+                '<span class="request-user">👤 ' + escapeHtml(r.username || t('unknown')) + '</span>' +
                 '<span class="request-type" style="background:#f39c12;">⚠️ ' + t('need_review_yes') + '</span>' +
             '</div>' +
-            '<div class="request-dates">📅 ' + new Date(r.record_date).toLocaleDateString() + '</div>' +
-            '<div><strong>' + t('work_hours') + ':</strong> ' + (r.work_hours || '?') + ' 小时</div>' +
-            '<div class="request-reason">⚠️ ' + t('work_hours_insufficient') + '</div>' +
+            '<div class="request-dates">📅 ' + new Date(r.record_date).toLocaleDateString(
+                currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'fr' ? 'fr-FR' : 'en-US'
+            ) + '</div>' +
+            checkInTimeDisplay +
+            '<div class="request-reason">⚠️ ' + abnormalReason + '</div>' +
             '<div class="request-actions">' +
-                '<button class="btn-validate" onclick="confirmNormalHours(\'' + r.id + '\')">✅ ' + t('approve_normal') + '</button>' +
+                '<button class="btn-validate" onclick="confirmNormalHours(\'' + r.id + '\')">✅ ' + t('confirm_normal') + '</button>' +
                 '<button class="btn-refuse" onclick="rejectAbnormalHours(\'' + r.id + '\', ' + r.user_id + ', \'' + r.record_date + '\')">❌ ' + t('marked_absent') + '</button>' +
             '</div>' +
         '</div>';
     }).join('');
 }
-window.confirmNormalHours = async function(id) {
-    await supabase.from('attendance_records').update({ need_review: false, status: 'normal' }).eq('id', id);
-   showToast(t('approved_normal'), 'success');
+window.rejectAbnormalHours = async function(id, userId, dateStr) {
+    await supabase.from('attendance_records').delete().eq('id', id);
+    
+    const { data: existing } = await supabase
+        .from('attendance_overrides')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('override_date', dateStr)
+        .single();
+    
+    if (existing) {
+        await supabase.from('attendance_overrides').update({
+            override_status: 'absent',
+            set_by: currentUserId,
+            reason: t('marked_absent')
+        }).eq('id', existing.id);
+    } else {
+        await supabase.from('attendance_overrides').insert({
+            user_id: userId,
+            override_date: dateStr,
+            override_status: 'absent',
+            set_by: currentUserId,
+            reason: t('marked_absent')
+        });
+    }
+    
+    showToast(t('marked_absent'), 'info');
     
     await loadAbnormalHours();
     await loadTeamCalendar();
@@ -1644,13 +1703,21 @@ window.changeAttendanceDate = async function(delta) {
 };
 
 async function loadAttendanceTimeline(date) {
-    const selectedDate = date.toISOString().split('T')[0];
+    // ========== 修复：正确处理日期，避免时区偏移 ==========
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const selectedDate = `${year}-${month}-${day}`;
+    
+    // 获取用户列表
     let { data: users } = await supabase.from('users').select('id, username, user_type').order('username');
     
+    // 非管理员只能看自己
     if (!canEditAttendance) {
-        users = users?.filter(function(u) { return u.id === currentUserId; }) || [];
+        users = users?.filter(u => u.id === currentUserId) || [];
     }
     
+    // 获取相关数据
     const { data: holidays } = await supabase.from('holidays').select('month_day');
     const { data: attendanceRecords } = await supabase.from('attendance_records').select('*').eq('record_date', selectedDate);
     const { data: leaveRequests } = await supabase.from('leave_details').select('*').in('status', ['approuve']).lte('start_date', selectedDate).gte('end_date', selectedDate);
@@ -1663,42 +1730,28 @@ async function loadAttendanceTimeline(date) {
         return;
     }
     
+    // 判断是否是周末/节假日
     const dateObj = new Date(selectedDate);
     const md = String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
     const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-    const isHoliday = holidays?.some(function(h) { return h.month_day === md; });
+    const isHoliday = holidays?.some(h => h.month_day === md);
     
     timeline.innerHTML = '';
     
     for (const user of users) {
-        const override = overrides?.find(function(o) { return o.user_id === user.id; });
-        const leave = leaveRequests?.find(function(r) { return r.user_id === user.id; });
-        const checkIn = attendanceRecords?.find(function(r) {
-            return r.user_id === user.id && r.action_type === 'check_in';
-        });
-        const checkOut = attendanceRecords?.find(function(r) {
-            return r.user_id === user.id && r.action_type === 'check_out';
-        });
-        const breakStart = attendanceRecords?.find(function(r) {
-            return r.user_id === user.id && r.action_type === 'break_start';
-        });
-        const breakEnd = attendanceRecords?.find(function(r) {
-            return r.user_id === user.id && r.action_type === 'break_end';
-        });
+        // 查找该用户的数据
+        const override = overrides?.find(o => o.user_id === user.id);
+        const leave = leaveRequests?.find(r => r.user_id === user.id);
+        const checkIn = attendanceRecords?.find(r => r.user_id === user.id && r.action_type === 'check_in');
+        const checkOut = attendanceRecords?.find(r => r.user_id === user.id && r.action_type === 'check_out');
+        const breakStart = attendanceRecords?.find(r => r.user_id === user.id && r.action_type === 'break_start');
+        const breakEnd = attendanceRecords?.find(r => r.user_id === user.id && r.action_type === 'break_end');
         
         let statusClass = '';
         let statusText = '';
         let recordsHtml = '';
         
-        // 状态映射
-        const statusIconMap = {
-            present: '✅',
-            absent: '❌',
-            mission: '🚚',
-            sick: '🤒',
-            halfday: '⏸️'
-        };
-        
+        // ========== 1. 优先：手动覆盖 ==========
         if (override) {
             const statusType = override.override_status;
             const classMap = { present: 'present', absent: 'absent', mission: 'mission', sick: 'sick', halfday: 'halfday' };
@@ -1709,38 +1762,68 @@ async function loadAttendanceTimeline(date) {
                 sick: t('sick'),
                 halfday: t('halfday')
             };
-            statusClass = classMap[statusType];
-            statusText = statusIconMap[statusType] + ' ' + textMap[statusType];
+            const iconMap = { present: '✅', absent: '❌', mission: '🚚', sick: '🤒', halfday: '⏸️' };
             
-        } else if (leave) {
-            statusClass = 'leave';
-            statusText = '🏖️ ' + t('leave');
+            statusClass = classMap[statusType] || 'absent';
+            statusText = (iconMap[statusType] || '📌') + ' ' + (textMap[statusType] || statusType);
             
-        } else if (checkIn) {
-            statusClass = 'present';
-            statusText = '✅ ' + t('present');
-            
-            const timeIn = new Date(checkIn.action_time).toLocaleTimeString();
-            recordsHtml += '<div class="timeline-record check_in">' + t('check_in') + ': ' + timeIn + '</div>';
-            
-            if (breakStart) {
-                recordsHtml += '<div class="timeline-record break_start">' + t('break_start') + ': ' + new Date(breakStart.action_time).toLocaleTimeString() + '</div>';
+            // 如果有打卡记录，仍然显示
+            if (checkIn) {
+                const timeIn = new Date(checkIn.action_time).toLocaleTimeString();
+                recordsHtml += '<div class="timeline-record check_in">' + t('check_in') + ': ' + timeIn + '</div>';
             }
-            
-            if (breakEnd) {
-                recordsHtml += '<div class="timeline-record break_end">' + t('break_end') + ': ' + new Date(breakEnd.action_time).toLocaleTimeString() + '</div>';
-            }
-            
             if (checkOut) {
                 const timeOut = new Date(checkOut.action_time).toLocaleTimeString();
                 recordsHtml += '<div class="timeline-record check_out">' + t('check_out') + ': ' + timeOut + '</div>';
             }
             
-            if (checkOut && (checkOut.need_review === true || checkOut.status === 'abnormal')) {
-                statusText = '⚠️ ' + t('work_hours_insufficient');
-                statusClass = 'mission';
+        // ========== 2. 请假 ==========
+        } else if (leave) {
+            statusClass = 'leave';
+            statusText = '🏖️ ' + t('leave');
+            
+        // ========== 3. 有上班打卡 ==========
+        } else if (checkIn) {
+            const timeIn = new Date(checkIn.action_time).toLocaleTimeString();
+            recordsHtml += '<div class="timeline-record check_in">' + t('check_in') + ': ' + timeIn + '</div>';
+            
+            // 休息开始
+            if (breakStart) {
+                recordsHtml += '<div class="timeline-record break_start">' + t('break_start') + ': ' + new Date(breakStart.action_time).toLocaleTimeString() + '</div>';
             }
             
+            // 休息结束
+            if (breakEnd) {
+                recordsHtml += '<div class="timeline-record break_end">' + t('break_end') + ': ' + new Date(breakEnd.action_time).toLocaleTimeString() + '</div>';
+            }
+            
+            // 下班打卡
+            if (checkOut) {
+                const timeOut = new Date(checkOut.action_time).toLocaleTimeString();
+                recordsHtml += '<div class="timeline-record check_out">' + t('check_out') + ': ' + timeOut + '</div>';
+            }
+            
+            // ========== 核心修复：判断是否异常 ==========
+            // 情况1：有上班打卡，但没有下班打卡 → 异常
+            // 情况2：有下班打卡但 need_review = true → 异常
+            // 情况3：正常工作 → 正常
+            
+            if (!checkOut) {
+                // 只有上班，没有下班
+                statusText = '⚠️ ' + (t('work_hours_insufficient') || '缺少下班打卡');
+                statusClass = 'mission';
+            } else if (checkOut.need_review === true || checkOut.status === 'abnormal') {
+                // 有下班打卡，但被标记为异常（工作时长不足）
+                const hours = checkOut.work_hours ? checkOut.work_hours.toFixed(1) : '?';
+                statusText = '⚠️ ' + (t('work_hours_insufficient') || '工作时长不足') + ' (' + hours + 'h)';
+                statusClass = 'mission';
+            } else {
+                // 正常出勤
+                statusText = '✅ ' + t('present');
+                statusClass = 'present';
+            }
+            
+        // ========== 4. 周末或节假日 ==========
         } else if (isWeekend || isHoliday) {
             statusClass = 'absent';
             if (isHoliday) {
@@ -1748,24 +1831,115 @@ async function loadAttendanceTimeline(date) {
             } else {
                 statusText = '🌙 ' + t('legend_weekend');
             }
+            
+        // ========== 5. 工作日无任何打卡 ==========
         } else {
             statusClass = 'absent';
             statusText = '❌ ' + t('absent');
         }
         
-        timeline.innerHTML += '<div class="timeline-row">' +
-            '<div class="timeline-user-avatar">' + user.username.charAt(0).toUpperCase() + '</div>' +
-            '<div class="timeline-user-info">' +
-                '<div class="timeline-user-name">' + escapeHtml(user.username) + '</div>' +
-                '<div class="timeline-user-type">' + user.user_type + '</div>' +
-                (canEditAttendance ? '<button class="edit-attendance-btn-small" onclick="quickEditAttendance(' + user.id + ', \'' + selectedDate + '\')">✏️ ' + t('edit') + '</button>' : '') +
-            '</div>' +
-            '<div class="timeline-status ' + statusClass + '">' + statusText + '</div>' +
-            '<div class="timeline-records">' + recordsHtml + '</div>' +
-        '</div>';
+        // 构建 HTML
+        timeline.innerHTML += `
+            <div class="timeline-row">
+                <div class="timeline-user-avatar">${user.username.charAt(0).toUpperCase()}</div>
+                <div class="timeline-user-info">
+                    <div class="timeline-user-name">${escapeHtml(user.username)}</div>
+                    <div class="timeline-user-type">${user.user_type}</div>
+                    ${canEditAttendance ? `<button class="edit-attendance-btn-small" onclick="quickEditAttendance(${user.id}, '${selectedDate}')">✏️ ${t('edit')}</button>` : ''}
+                </div>
+                <div class="timeline-status ${statusClass}">${statusText}</div>
+                <div class="timeline-records">${recordsHtml}</div>
+            </div>
+        `;
     }
 }
-
+// ============================================================================
+// 自动检查未打卡下班（每天凌晨执行）
+// ============================================================================
+// ============================================================================
+// 自动检查未打卡下班（每天凌晨执行）
+// ============================================================================
+async function checkMissedCheckouts() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const year = yesterday.getFullYear();
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
+    const yesterdayStr = `${year}-${month}-${day}`;
+    
+    const { data: checkIns, error: checkInError } = await supabase
+        .from('attendance_records')
+        .select('user_id, username, user_type, action_time')
+        .eq('record_date', yesterdayStr)
+        .eq('action_type', 'check_in');
+    
+    if (checkInError) {
+        console.error('查询上班打卡失败:', checkInError);
+        return;
+    }
+    
+    if (!checkIns || checkIns.length === 0) {
+        console.log('前一天没有上班打卡记录');
+        return;
+    }
+    
+    console.log(`找到 ${checkIns.length} 个用户有上班打卡`);
+    
+    for (const checkIn of checkIns) {
+        const { data: existingCheckOut } = await supabase
+            .from('attendance_records')
+            .select('id')
+            .eq('user_id', checkIn.user_id)
+            .eq('record_date', yesterdayStr)
+            .eq('action_type', 'check_out')
+            .maybeSingle();
+        
+        if (!existingCheckOut) {
+            const checkInTime = new Date(checkIn.action_time);
+            const noonTime = new Date(`${yesterdayStr}T12:00:00`);
+            const fivePM = new Date(`${yesterdayStr}T17:00:00`);
+            
+            let defaultCheckOutTime;
+            let workHours = 0;
+            
+            // 如果上班时间早于或等于12:00，下班时间设为12:00
+            if (checkInTime <= noonTime) {
+                defaultCheckOutTime = noonTime;
+                // 计算工作时长（小时）
+                workHours = (defaultCheckOutTime - checkInTime) / (1000 * 60 * 60);
+                workHours = Math.round(workHours * 10) / 10; // 保留一位小数
+                console.log(`用户 ${checkIn.username} 上班时间 ${checkInTime.toLocaleTimeString()} ≤ 12:00，下班时间设为 12:00，工作时长: ${workHours}h`);
+            } 
+            // 如果上班时间晚于12:00，下班时间设为17:00
+            else {
+                defaultCheckOutTime = fivePM;
+                // 计算工作时长（小时）
+                workHours = (defaultCheckOutTime - checkInTime) / (1000 * 60 * 60);
+                workHours = Math.round(workHours * 10) / 10; // 保留一位小数
+                console.log(`用户 ${checkIn.username} 上班时间 ${checkInTime.toLocaleTimeString()} > 12:00，下班时间设为 17:00，工作时长: ${workHours}h`);
+            }
+            
+            const { error: insertError } = await supabase.from('attendance_records').insert({
+                user_id: checkIn.user_id,
+                username: checkIn.username,
+                user_type: checkIn.user_type,
+                record_date: yesterdayStr,
+                action_type: 'check_out',
+                action_time: defaultCheckOutTime.toISOString(),
+                need_review: true,
+                status: 'abnormal',
+                work_hours: workHours,  // 计算后的工作时长
+                is_valid: true
+            });
+            
+            if (insertError) {
+                console.error(`创建下班异常记录失败 (用户 ${checkIn.user_id}):`, insertError);
+            } else {
+                console.log(`⚠️ 用户 ${checkIn.username} (${checkIn.user_id}) 缺少下班打卡，已添加异常记录（工作时长: ${workHours}h）`);
+            }
+        }
+    }
+}
 // ============================================================================
 // Excel 导出
 // ============================================================================
@@ -1971,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateDateTime();
     setInterval(updateDateTime, 1000);
     fetchRealWeather();
-    
+    await checkMissedCheckouts();
     await loadLeaveTypes();
     await checkAndAddMonthlyLeave();
     
@@ -1989,7 +2163,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadPendingCancelRequests();
     await updateTabBadges();
 }
-    
+   
     updateAttendanceDateDisplay();
     
     if (document.getElementById('tab-attendance-stats').classList.contains('active')) {
