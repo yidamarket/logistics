@@ -1169,3 +1169,38 @@ body {
     background: #f57c00;
     transform: scale(1.05);
 }
+/* ==================== 新增状态样式 ==================== */
+.status-incomplete { background: #fff3e0; color: #e65100; }
+.status-short-hours { background: #fff3e0; color: #e65100; }
+.status-sick { background: #ffcdd2; color: #b71c1c; }
+.status-unpaid { background: #fff3e0; color: #e65100; }
+.status-maternity { background: #e1bee7; color: #4a148c; }
+.status-paternity { background: #d1c4e9; color: #311b92; }
+.status-marriage { background: #f8bbd0; color: #880e4f; }
+.status-bereavement { background: #e0e0e0; color: #424242; }
+.status-school { background: #ce93d8; color: #4a148c; }
+.status-holiday { background: #e1bee7; color: #4a148c; }
+
+/* 图例新增颜色 */
+.legend-color.incomplete { background: #fff3e0; border-color: #ffb74d; }
+.legend-color.short-hours { background: #fff3e0; border-color: #ffb74d; }
+.legend-color.holiday { background: #e1bee7; border-color: #ba68c8; }
+
+/* 角标动画 */
+.badge {
+    display: inline-block;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 6px;
+    animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
