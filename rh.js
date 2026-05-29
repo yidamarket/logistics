@@ -1484,6 +1484,9 @@ window.editUserAttendance = async function(userId, userName, year, month) {
 // ============================================================================
 // 快速修改出勤状态（仅用于非异常格子）
 // ============================================================================
+// ============================================================================
+// 快速修改出勤状态（修复保存失败问题 - 适配表结构）
+// ============================================================================
 window.quickEditAttendance = async function(userId, dateStr) {
     if (!canEditAttendance) return;
     
@@ -1555,7 +1558,7 @@ window.quickEditAttendance = async function(userId, dateStr) {
         
         if (deleteError) {
             console.error('删除覆盖记录失败:', deleteError);
-            showToast('恢复默认失败', 'error');
+            showToast('恢复默认失败: ' + deleteError.message, 'error');
             return;
         }
         
@@ -1567,8 +1570,8 @@ window.quickEditAttendance = async function(userId, dateStr) {
     
     // ========== 处理手动设置状态 ==========
     else {
-        // 1. 写入或更新手动覆盖
-        const { error: upsertError } = await supabase
+        // 使用 upsert 并指定冲突处理（适配唯一约束）
+        const { error: saveError } = await supabase
             .from('attendance_overrides')
             .upsert({
                 user_id: userId,
@@ -1576,12 +1579,14 @@ window.quickEditAttendance = async function(userId, dateStr) {
                 override_status: selectedStatus,
                 set_by: currentUserId,
                 reason: 'manual_fix',
-                updated_at: new Date()
+                set_at: new Date()  // 使用 set_at 而不是 updated_at
+            }, {
+                onConflict: 'user_id, override_date'  // 指定冲突时更新的字段
             });
         
-        if (upsertError) {
-            console.error('写入覆盖记录失败:', upsertError);
-            showToast('保存失败', 'error');
+        if (saveError) {
+            console.error('保存覆盖记录失败:', saveError);
+            showToast('保存失败: ' + saveError.message, 'error');
             return;
         }
         
@@ -1599,6 +1604,7 @@ window.quickEditAttendance = async function(userId, dateStr) {
         
         if (updateError) {
             console.error('更新异常状态失败:', updateError);
+            // 不阻塞主流程，只记录错误
         }
         
         showToast('已保存', 'success');
