@@ -51,6 +51,10 @@
             <button class="tab-btn" data-tab="balances" id="balancesTab">⚖️ <span data-i18n="tab_balances">余额管理</span></button>
             <button class="tab-btn" data-tab="attendance-stats" id="attendanceStatsTab">📊 <span data-i18n="tab_attendance_stats">出勤统计</span></button>
             <button class="tab-btn" data-tab="abnormal-hours" id="abnormalHoursTab">⚠️ <span data-i18n="tab_abnormal_hours">工时异常</span></button>
+            <button class="tab-btn" data-tab="employee-management" id="employeeManagementTab">
+            👥 <span data-i18n="tab_employee_management">员工管理</span>
+            </button>
+            <button class="tab-btn" data-tab="my-profile" id="myProfileTab">👤 <span data-i18n="tab_my_profile">我的资料</span></button>
         </div>
 
         <!-- Tab: 我的请假 -->
@@ -109,28 +113,104 @@
         <!-- Tab: 余额管理 -->
         <div id="tab-balances" class="tab-content"><div class="section-card"><div class="section-title">⚖️ <span data-i18n="all_balances">员工假期余额</span></div><div id="allBalances"></div></div></div>
 
-        <!-- Tab: 出勤统计 -->
-        <div id="tab-attendance-stats" class="tab-content">
+        <!-- Tab: 员工管理 -->
+        <div id="tab-employee-management" class="tab-content">
             <div class="section-card">
-                <div class="section-title">📊 <span data-i18n="attendance_stats">出勤统计</span></div>
-                <div class="date-navigation">
-                    <button class="date-nav-btn" onclick="window.changeAttendanceDate(-1)">◀</button>
-                    <span class="current-date-display" id="currentAttendanceDate"></span>
-                    <button class="date-nav-btn" onclick="window.changeAttendanceDate(1)">▶</button>
+                <div class="section-title">👥 <span data-i18n="employee_management">员工管理</span></div>
+                <div class="employee-actions" style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn-primary" id="addEmployeeBtn" style="width: auto; padding: 10px 20px;">➕ <span data-i18n="add_employee">新增员工</span></button>
+                    <input type="text" id="employeeSearchInput" class="search-input" placeholder="🔍 搜索员工..." style="flex: 1; padding: 10px; border-radius: 30px; border: 1px solid #ddd;">
                 </div>
-                <div class="timeline-container">
-                    <div class="timeline-header"><div class="timeline-title">👥 <span data-i18n="attendance_status">出勤状态</span></div><div class="timeline-date" id="selectedDateDisplay"></div></div>
-                    <div class="timeline-grid" id="attendanceTimeline"><div class="loading">加载中...</div></div>
-                </div>
+                <div id="employeeList" class="employee-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;"></div>
             </div>
         </div>
 
-        <!-- Tab: 工时异常 -->
-        <div id="tab-abnormal-hours" class="tab-content"><div class="section-card"><div class="section-title">⚠️ <span data-i18n="tab_abnormal_hours">工时异常</span></div><div id="abnormalHoursList"></div></div></div>
+       
 
         <!-- Tab: 待批取消 -->
         <div id="tab-pending-cancel" class="tab-content"><div class="section-card"><div class="section-title">📝 <span data-i18n="pending_cancel_requests">待审批取消申请</span></div><div id="pendingCancelList"></div></div></div>
+    <div id="tab-my-profile" class="tab-content">
+    <div class="section-card">
+        <div class="section-title">👤 <span data-i18n="my_profile">我的资料</span></div>
+        <div id="myProfileForm" style="display: grid; gap: 20px; max-width: 600px; margin: 0 auto;">
+            <div class="profile-avatar" style="text-align: center; margin-bottom: 10px;">
+                <div id="profileAvatar" style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 40px; font-weight: bold; margin: 0 auto 15px;"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-field">
+                    <label data-i18n="username">用户名</label>
+                    <input type="text" id="profile_username" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="user_type">员工类型</label>
+                    <input type="text" id="profile_user_type" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5;" readonly disabled>
+                </div>
+                <div class="input-field">
+                    <label data-i18n="phone">电话</label>
+                    <input type="text" id="profile_phone" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="email">邮箱</label>
+                    <input type="email" id="profile_email" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="contract_type">合同类型</label>
+                    <input type="text" id="profile_contract_type" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5;" readonly disabled>
+                </div>
+                <div class="input-field">
+                    <label data-i18n="hire_date">入职日期</label>
+                    <input type="text" id="profile_hire_date" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: #f5f5f5;" readonly disabled>
+                </div>
+            </div>
+            <div>
+                <label data-i18n="address">地址</label>
+                <textarea id="profile_address" class="modal-textarea" rows="2" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;"></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-field">
+                    <label data-i18n="birth_date">出生日期</label>
+                    <input type="date" id="profile_birth_date" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="nationality">国籍</label>
+                    <input type="text" id="profile_nationality" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="emergency_contact">紧急联系人</label>
+                    <input type="text" id="profile_emergency_contact" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="emergency_phone">紧急电话</label>
+                    <input type="text" id="profile_emergency_phone" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+            </div>
+            <div class="input-field">
+                <label data-i18n="marital_status">婚姻状况</label>
+                <select id="profile_marital_status" class="modal-select" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                    <option value="single">单身</option>
+                    <option value="married">已婚</option>
+                    <option value="divorced">离异</option>
+                    <option value="widowed">丧偶</option>
+                </select>
+            </div>
+            <div class="input-field">
+                <label data-i18n="photo_url">照片URL</label>
+                <input type="text" id="profile_photo_url" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;" placeholder="https://...">
+            </div>
+            <div class="input-field">
+                <label data-i18n="change_password">修改密码</label>
+                <input type="password" id="profile_new_password" class="modal-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd;" placeholder="留空则不修改">
+            </div>
+            <div class="info-note" style="font-size: 12px; color: #999; text-align: center; padding: 8px; background: #f8f9fa; border-radius: 8px;">
+                ℹ️ <span data-i18n="readonly_fields_note">合同类型、入职日期等敏感信息不可修改，请联系管理员</span>
+            </div>
+            <button id="saveProfileBtn" class="btn-primary" style="margin-top: 10px;">💾 <span data-i18n="save_changes">保存修改</span></button>
+        </div>
     </div>
+</div>
+    </div>
+ 
+
 
     <!-- 模态框（只保留一个，在 app-container 外面） -->
     <div id="customModal" class="custom-modal" style="display: none;">
@@ -157,5 +237,160 @@
             <div class="custom-modal-actions" id="modalActions"></div>
         </div>
     </div>
+    <div id="addEmployeeModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>➕ <span data-i18n="add_employee">新增员工</span></h3>
+            <button class="modal-close" onclick="closeAddEmployeeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-field">
+                    <label data-i18n="username">用户名 *</label>
+                    <input type="text" id="new_username" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="password">密码 *</label>
+                    <input type="password" id="new_password" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;" value="password123">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="user_type">员工类型</label>
+                    <select id="new_user_type" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="chauffeur">🚚 司机</option>
+                        <option value="employe">👤 员工</option>
+                        <option value="preparateur">📦 备货员</option>
+                        <option value="secretaire">📋 秘书</option>
+                        <option value="manager">👔 经理</option>
+                        <option value="admin">👑 管理员</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label data-i18n="phone">电话</label>
+                    <input type="text" id="new_phone" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="email">邮箱</label>
+                    <input type="email" id="new_email" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="contract_type">合同类型</label>
+                    <select id="new_contract_type" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="CDI">CDI</option>
+                        <option value="CDD">CDD</option>
+                        <option value="Interim">Intérim</option>
+                        <option value="Stage">Stage</option>
+                    </select>
+                </div>
+                <div class="input-field" style="grid-column: span 2;">
+                    <label data-i18n="address">地址</label>
+                    <input type="text" id="new_address" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #eee;">
+            <button class="btn-cancel" onclick="closeAddEmployeeModal()" style="background: #f0f0f0; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer;">取消</button>
+            <button class="btn-primary" onclick="saveAddEmployee()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer;">创建</button>
+        </div>
+    </div>
+</div>
+<!-- 编辑员工弹窗 -->
+<div id="editEmployeeModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>✏️ <span data-i18n="edit_employee">编辑员工</span></h3>
+            <button class="modal-close" onclick="closeEditEmployeeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="edit_employee_id">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-field">
+                    <label data-i18n="username">用户名</label>
+                    <input type="text" id="edit_username" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="user_type">员工类型</label>
+                    <select id="edit_user_type" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="chauffeur">🚚 司机</option>
+                        <option value="employe">👤 员工</option>
+                        <option value="preparateur">📦 备货员</option>
+                        <option value="secretaire">📋 秘书</option>
+                        <option value="manager">👔 经理</option>
+                        <option value="admin">👑 管理员</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label data-i18n="phone">电话</label>
+                    <input type="text" id="edit_phone" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="email">邮箱</label>
+                    <input type="email" id="edit_email" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field" style="grid-column: span 2;">
+                    <label data-i18n="address">地址</label>
+                    <input type="text" id="edit_address" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="contract_type">合同类型</label>
+                    <select id="edit_contract_type" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="CDI">CDI</option>
+                        <option value="CDD">CDD</option>
+                        <option value="Interim">Intérim</option>
+                        <option value="Stage">Stage</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label data-i18n="marital_status">婚姻状况</label>
+                    <select id="edit_marital_status" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="single">单身</option>
+                        <option value="married">已婚</option>
+                        <option value="divorced">离异</option>
+                        <option value="widowed">丧偶</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label data-i18n="birth_date">出生日期</label>
+                    <input type="date" id="edit_birth_date" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="hire_date">入职日期</label>
+                    <input type="date" id="edit_hire_date" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="nationality">国籍</label>
+                    <input type="text" id="edit_nationality" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;" value="Française">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="conges_payes">带薪假期</label>
+                    <input type="number" step="0.5" id="edit_conges_payes" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="emergency_contact">紧急联系人</label>
+                    <input type="text" id="edit_emergency_contact" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="emergency_phone">紧急电话</label>
+                    <input type="text" id="edit_emergency_phone" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="photo_url">照片URL</label>
+                    <input type="text" id="edit_photo_url" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;" placeholder="https://...">
+                </div>
+                <div class="input-field">
+                    <label data-i18n="status">状态</label>
+                    <select id="edit_active" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="true">✅ 在职</option>
+                        <option value="false">❌ 离职</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #eee;">
+            <button class="btn-cancel" onclick="closeEditEmployeeModal()" style="background: #f0f0f0; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer;">取消</button>
+            <button class="btn-primary" onclick="saveEditEmployee()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer;">保存</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

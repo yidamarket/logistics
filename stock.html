@@ -862,12 +862,20 @@
                         <strong>💰 Prix promo calculé :</strong> <span id="previewPriceDisplay">-</span> €
                     </div>
                 </div>
-                
                 <div class="form-group">
-                    <label class="form-label" id="labelImage">Image du produit</label>
-                    <input type="file" class="form-input" id="productImage" accept="image/*">
-                    <img id="imagePreview" class="image-preview">
+                <label class="form-label" id="labelImage">Image du produit</label>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <label style="flex: 1; padding: 10px 16px; background: #f1f5f9; border-radius: 12px; cursor: pointer; text-align: center;">
+                        📁 Upload
+                        <input type="file" id="productImage" accept="image/*" style="display: none;">
+                    </label>
+                    <span style="align-self: center;">ou</span>
+                    <input type="text" class="form-input" id="productImageUrl" placeholder="https://... (URL de l'image)" style="flex: 2;">
                 </div>
+    <img id="imagePreview" class="image-preview">
+</div>
+                
+               
                 <button type="submit" class="submit-btn" id="submitBtn">Ajouter</button>
             </form>
         </div>
@@ -1184,159 +1192,210 @@ tabSeasoning: "🧂 Assaisonnement",
             calculatePromoPrice();
         }
 
-        // ========== Excel 导入功能 ==========
-        function downloadTemplate() {
-            const data = [
-                ['name_fr', 'name_zh', 'category', 'price', 'quantity', 'is_promotion', 'discount_percent'],
-                ['Pomme', '苹果', 'fresh', 2.5, 100, 'FALSE', ''],
-                ['Riz', '大米', 'dry', 5.0, 50, 'TRUE', 20],
-                ['Poisson surgelé', '冷冻鱼', 'frozen', 12.0, 30, 'FALSE', ''],
-                ['Sauce soja', '酱油', 'nonfood', 3.5, 200, 'FALSE', '']
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Produits');
-            XLSX.writeFile(wb, 'template_produits.xlsx');
-            showToast('Template téléchargé', 'success');
-        }
-
+  function downloadTemplate() {
+    const data = [
+        ['name_fr', 'name_zh', 'category', 'price', 'quantity', 'is_promotion', 'discount_percent', 'image_url'],
+        ['Pomme', '苹果', 'fresh', 2.5, 100, 'FALSE', '', 'https://example.com/pomme.jpg'],
+        ['Riz', '大米', 'dry', 5.0, 50, 'TRUE', 20, ''],
+        ['Poisson surgelé', '冷冻鱼', 'frozen', 12.0, 30, 'FALSE', '', ''],
+        ['Sauce soja', '酱油', 'nonfood', 3.5, 200, 'FALSE', '', '']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Produits');
+    XLSX.writeFile(wb, 'template_produits.xlsx');
+    showToast('Template téléchargé', 'success');
+}
         function showImportModal() {
             document.getElementById('importModal').classList.add('active');
             document.getElementById('importExcelFile').value = '';
             document.getElementById('importProgress').style.display = 'none';
         }
+async function openEditModal(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const t = translations[currentLang];
+    document.getElementById('modalTitle').textContent = t.modalEditTitle;
+    document.getElementById('productId').value = product.id;
+    document.getElementById('productNameFr').value = product.name_fr || '';
+    document.getElementById('productNameZh').value = product.name_zh || '';
+    document.getElementById('productCategory').value = product.category;
+    document.getElementById('productPrice').value = product.price;
+    document.getElementById('productQuantity').value = product.quantity || 0;
+    document.getElementById('isPromotion').checked = product.is_promotion === true;
+    
+    if (product.is_promotion) {
+        document.getElementById('promoOptions').style.display = 'block';
+        const discount = product.discount_percent || 0;
+        if (discount > 0) {
+            document.querySelector('input[name="promoType"][value="percent"]').checked = true;
+            document.getElementById('percentGroup').style.display = 'block';
+            document.getElementById('fixedPriceGroup').style.display = 'none';
+            document.getElementById('discountPercent').value = discount;
+        } else if (product.promotion_price) {
+            document.querySelector('input[name="promoType"][value="fixed"]').checked = true;
+            document.getElementById('percentGroup').style.display = 'none';
+            document.getElementById('fixedPriceGroup').style.display = 'block';
+            document.getElementById('promotionPrice').value = product.promotion_price;
+        }
+        calculatePromoPrice();
+    } else {
+        document.getElementById('promoOptions').style.display = 'none';
+    }
+    
+    document.getElementById('submitBtn').textContent = t.submitEdit;
+    
+    // 清空文件上传和URL输入框
+    document.getElementById('productImage').value = '';
+    document.getElementById('productImageUrl').value = '';
+    
+    // 显示已有图片
+    if (product.image_url) {
+        const preview = document.getElementById('imagePreview');
+        preview.src = product.image_url;
+        preview.classList.add('show');
+        document.getElementById('productImageUrl').value = product.image_url;
+    } else {
+        document.getElementById('imagePreview').classList.remove('show');
+    }
+    
+    document.getElementById('productModal').classList.add('active');
+}
+      async function importExcel() {
+    const fileInput = document.getElementById('importExcelFile');
+    const file = fileInput.files[0];
+    if (!file) {
+        showToast('Veuillez sélectionner un fichier Excel', 'warning');
+        return;
+    }
 
-        async function importExcel() {
-            const fileInput = document.getElementById('importExcelFile');
-            const file = fileInput.files[0];
-            if (!file) {
-                showToast('Veuillez sélectionner un fichier Excel', 'warning');
-                return;
-            }
+    const progressDiv = document.getElementById('importProgress');
+    progressDiv.style.display = 'block';
+    progressDiv.innerHTML = '<div>📖 Lecture du fichier...</div>';
 
-            const progressDiv = document.getElementById('importProgress');
-            progressDiv.style.display = 'block';
-            progressDiv.innerHTML = '<div>📖 Lecture du fichier...</div>';
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
-                
-                if (!rows || rows.length < 2) {
-                    progressDiv.innerHTML = '<div class="import-error">❌ Fichier vide ou invalide</div>';
-                    return;
-                }
-                
-                const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
-                const requiredHeaders = ['name_fr', 'name_zh', 'category', 'price'];
-                const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-                if (missingHeaders.length > 0) {
-                    progressDiv.innerHTML = `<div class="import-error">❌ Colonnes manquantes: ${missingHeaders.join(', ')}</div>`;
-                    return;
-                }
-
-                let successCount = 0;
-                let errorCount = 0;
-                const errors = [];
-
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
-                    
-                    const getValue = (colName) => {
-                        const idx = headers.indexOf(colName);
-                        return idx !== -1 && row[idx] !== undefined ? row[idx] : '';
-                    };
-                    
-                    const nameFr = String(getValue('name_fr') || '').trim();
-                    const nameZh = String(getValue('name_zh') || '').trim();
-                    const categoryRaw = String(getValue('category') || '').toLowerCase().trim();
-                    const priceRaw = getValue('price');
-                    const quantityRaw = getValue('quantity');
-                    const isPromotionRaw = String(getValue('is_promotion') || 'false').toLowerCase();
-                    const discountPercent = parseInt(getValue('discount_percent')) || 0;
-                    
-                    if (!nameFr || !nameZh) {
-                        errors.push(`Ligne ${i}: Nom manquant`);
-                        errorCount++;
-                        continue;
-                    }
-                    const categoryMap = {
-                        'dry': 'dry', 'sec': 'dry',
-                        'frozen': 'frozen', 'surgelé': 'frozen', 'surgeles': 'frozen',
-                        'fresh': 'fresh', 'frais': 'fresh',
-                        'nonfood': 'nonfood', 'hygiène': 'nonfood', 'hygiene': 'nonfood', '卫生用品': 'nonfood',
-                        'drinks': 'drinks', 'boissons': 'drinks', '酒水': 'drinks',
-                        'bangkok': 'bangkok', 'bangkok factory': 'bangkok', '曼谷工厂特供': 'bangkok',
-                        'packaging': 'packaging', 'sacs d\'emballage': 'packaging', '打包带': 'packaging',
-                        'seasoning': 'seasoning', 'assaisonnement': 'seasoning', '调味料': 'seasoning'
-                    };
-                    let category = categoryMap[categoryRaw] || categoryRaw;
-                    if (!['dry', 'frozen', 'fresh', 'nonfood', 'drinks', 'bangkok', 'packaging', 'seasoning'].includes(category)) {
-                        errors.push(`Ligne ${i}: Catégorie invalide "${categoryRaw}"`);
-                        errorCount++;
-                        continue;
-                    }
-                    
-                    const price = parseFloat(priceRaw);
-                    if (isNaN(price) || price <= 0) {
-                        errors.push(`Ligne ${i}: Prix invalide "${priceRaw}"`);
-                        errorCount++;
-                        continue;
-                    }
-                    
-                    const quantity = parseInt(quantityRaw) || 0;
-                    const isPromotion = isPromotionRaw === 'true' || isPromotionRaw === '1' || isPromotionRaw === 'vrai';
-                    let promotionPrice = null;
-                    if (isPromotion && discountPercent > 0 && discountPercent <= 100) {
-                        promotionPrice = price * (100 - discountPercent) / 100;
-                    }
-                    
-                    try {
-                        const productData = {
-                            name_fr: nameFr,
-                            name_zh: nameZh,
-                            category: category,
-                            price: price,
-                            quantity: quantity,
-                            is_promotion: isPromotion,
-                            discount_percent: isPromotion ? discountPercent : 0,
-                            promotion_price: promotionPrice,
-                            created_at: new Date(),
-                            updated_at: new Date()
-                        };
-                        const { error } = await window.supabase.from('products').insert([productData]);
-                        if (error) throw error;
-                        successCount++;
-                        progressDiv.innerHTML = `<div>📝 Import: ${successCount + errorCount}/${rows.length - 1}</div>`;
-                    } catch (err) {
-                        errors.push(`Ligne ${i}: ${err.message}`);
-                        errorCount++;
-                    }
-                }
-                
-                progressDiv.innerHTML = `
-                    <div class="import-success">✅ Import réussi: ${successCount}</div>
-                    ${errorCount > 0 ? `<div class="import-error">❌ Erreurs: ${errorCount}</div>` : ''}
-                    ${errors.slice(0, 5).map(e => `<div class="import-error">⚠️ ${e}</div>`).join('')}
-                    ${errors.length > 5 ? `<div class="import-error">... et ${errors.length - 5} autres erreurs</div>` : ''}
-                `;
-                
-                showToast(`${successCount} produits importés`, successCount > 0 ? 'success' : 'error');
-                await loadProducts();
-                
-                if (successCount > 0) {
-                    setTimeout(() => {
-                        document.getElementById('importModal').classList.remove('active');
-                    }, 2000);
-                }
-            };
-            reader.readAsArrayBuffer(file);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+        
+        if (!rows || rows.length < 2) {
+            progressDiv.innerHTML = '<div class="import-error">❌ Fichier vide ou invalide</div>';
+            return;
+        }
+        
+        const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+        const requiredHeaders = ['name_fr', 'name_zh', 'category', 'price'];
+        const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+        if (missingHeaders.length > 0) {
+            progressDiv.innerHTML = `<div class="import-error">❌ Colonnes manquantes: ${missingHeaders.join(', ')}</div>`;
+            return;
         }
 
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+            
+            const getValue = (colName) => {
+                const idx = headers.indexOf(colName);
+                return idx !== -1 && row[idx] !== undefined ? row[idx] : '';
+            };
+            
+            const nameFr = String(getValue('name_fr') || '').trim();
+            const nameZh = String(getValue('name_zh') || '').trim();
+            const categoryRaw = String(getValue('category') || '').toLowerCase().trim();
+            const priceRaw = getValue('price');
+            const quantityRaw = getValue('quantity');
+            const isPromotionRaw = String(getValue('is_promotion') || 'false').toLowerCase();
+            const discountPercent = parseInt(getValue('discount_percent')) || 0;
+            const imageUrl = String(getValue('image_url') || '').trim();  // 读取图片链接列
+            
+            if (!nameFr || !nameZh) {
+                errors.push(`Ligne ${i}: Nom manquant`);
+                errorCount++;
+                continue;
+            }
+            const categoryMap = {
+                'dry': 'dry', 'sec': 'dry',
+                'frozen': 'frozen', 'surgelé': 'frozen', 'surgeles': 'frozen',
+                'fresh': 'fresh', 'frais': 'fresh',
+                'nonfood': 'nonfood', 'hygiène': 'nonfood', 'hygiene': 'nonfood', '卫生用品': 'nonfood',
+                'drinks': 'drinks', 'boissons': 'drinks', '酒水': 'drinks',
+                'bangkok': 'bangkok', 'bangkok factory': 'bangkok', '曼谷工厂特供': 'bangkok',
+                'packaging': 'packaging', 'sacs d\'emballage': 'packaging', '打包带': 'packaging',
+                'seasoning': 'seasoning', 'assaisonnement': 'seasoning', '调味料': 'seasoning'
+            };
+            let category = categoryMap[categoryRaw] || categoryRaw;
+            if (!['dry', 'frozen', 'fresh', 'nonfood', 'drinks', 'bangkok', 'packaging', 'seasoning'].includes(category)) {
+                errors.push(`Ligne ${i}: Catégorie invalide "${categoryRaw}"`);
+                errorCount++;
+                continue;
+            }
+            
+            const price = parseFloat(priceRaw);
+            if (isNaN(price) || price <= 0) {
+                errors.push(`Ligne ${i}: Prix invalide "${priceRaw}"`);
+                errorCount++;
+                continue;
+            }
+            
+            const quantity = parseInt(quantityRaw) || 0;
+            const isPromotion = isPromotionRaw === 'true' || isPromotionRaw === '1' || isPromotionRaw === 'vrai';
+            let promotionPrice = null;
+            if (isPromotion && discountPercent > 0 && discountPercent <= 100) {
+                promotionPrice = price * (100 - discountPercent) / 100;
+            }
+            
+            try {
+                const productData = {
+                    name_fr: nameFr,
+                    name_zh: nameZh,
+                    category: category,
+                    price: price,
+                    quantity: quantity,
+                    is_promotion: isPromotion,
+                    discount_percent: isPromotion ? discountPercent : 0,
+                    promotion_price: promotionPrice,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                };
+                // 添加图片链接（如果有）
+                if (imageUrl && imageUrl !== '') {
+                    productData.image_url = imageUrl;
+                }
+                const { error } = await window.supabase.from('products').insert([productData]);
+                if (error) throw error;
+                successCount++;
+                progressDiv.innerHTML = `<div>📝 Import: ${successCount + errorCount}/${rows.length - 1}</div>`;
+            } catch (err) {
+                errors.push(`Ligne ${i}: ${err.message}`);
+                errorCount++;
+            }
+        }
+        
+        progressDiv.innerHTML = `
+            <div class="import-success">✅ Import réussi: ${successCount}</div>
+            ${errorCount > 0 ? `<div class="import-error">❌ Erreurs: ${errorCount}</div>` : ''}
+            ${errors.slice(0, 5).map(e => `<div class="import-error">⚠️ ${e}</div>`).join('')}
+            ${errors.length > 5 ? `<div class="import-error">... et ${errors.length - 5} autres erreurs</div>` : ''}
+        `;
+        
+        showToast(`${successCount} produits importés`, successCount > 0 ? 'success' : 'error');
+        await loadProducts();
+        
+        if (successCount > 0) {
+            setTimeout(() => {
+                document.getElementById('importModal').classList.remove('active');
+            }, 2000);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
         // ========== 单独上传图片 ==========
         async function uploadSingleImage(productId, file) {
             if (!file) return null;
@@ -1438,6 +1497,7 @@ tabSeasoning: "🧂 Assaisonnement",
             document.getElementById('importExcelBtn').addEventListener('click', showImportModal);
             document.getElementById('downloadTemplateBtn').addEventListener('click', downloadTemplate);
             document.getElementById('confirmImportBtn').addEventListener('click', importExcel);
+            document.getElementById('productImageUrl')?.addEventListener('input', previewImage);
 
             document.querySelectorAll('.category-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
@@ -1565,82 +1625,50 @@ tabSeasoning: "🧂 Assaisonnement",
             });
         }
 
-        function openAddModal() {
-            const t = translations[currentLang];
-            document.getElementById('modalTitle').textContent = t.modalAddTitle;
-            document.getElementById('productId').value = '';
-            document.getElementById('productForm').reset();
-            document.getElementById('imagePreview').classList.remove('show');
-            document.getElementById('productImage').value = '';
-            document.getElementById('isPromotion').checked = false;
-            document.getElementById('promoOptions').style.display = 'none';
-            document.getElementById('discountPercent').value = '';
-            document.getElementById('promotionPrice').value = '';
-            document.querySelector('input[name="promoType"][value="percent"]').checked = true;
-            document.getElementById('percentGroup').style.display = 'block';
-            document.getElementById('fixedPriceGroup').style.display = 'none';
-            document.getElementById('previewPriceDisplay').textContent = '-';
-            document.getElementById('submitBtn').textContent = t.submitAdd;
-            document.getElementById('productModal').classList.add('active');
-        }
-async function openEditModal(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+     function openAddModal() {
     const t = translations[currentLang];
-    document.getElementById('modalTitle').textContent = t.modalEditTitle;
-    document.getElementById('productId').value = product.id;
-    document.getElementById('productNameFr').value = product.name_fr || '';
-    document.getElementById('productNameZh').value = product.name_zh || '';
-    document.getElementById('productCategory').value = product.category;
-    document.getElementById('productPrice').value = product.price;
-    document.getElementById('productQuantity').value = product.quantity || 0;
-    document.getElementById('isPromotion').checked = product.is_promotion === true;
-    
-    if (product.is_promotion) {
-        document.getElementById('promoOptions').style.display = 'block';
-        const discount = product.discount_percent || 0;
-        if (discount > 0) {
-            document.querySelector('input[name="promoType"][value="percent"]').checked = true;
-            document.getElementById('percentGroup').style.display = 'block';
-            document.getElementById('fixedPriceGroup').style.display = 'none';
-            document.getElementById('discountPercent').value = discount;
-        } else if (product.promotion_price) {
-            document.querySelector('input[name="promoType"][value="fixed"]').checked = true;
-            document.getElementById('percentGroup').style.display = 'none';
-            document.getElementById('fixedPriceGroup').style.display = 'block';
-            document.getElementById('promotionPrice').value = product.promotion_price;
-        }
-        calculatePromoPrice();
-    } else {
-        document.getElementById('promoOptions').style.display = 'none';
-    }
-    
-    document.getElementById('submitBtn').textContent = t.submitEdit;
-    if (product.image_url) {
-        const preview = document.getElementById('imagePreview');
-        preview.src = product.image_url;
-        preview.classList.add('show');
-    } else {
-        document.getElementById('imagePreview').classList.remove('show');
-    }
+    document.getElementById('modalTitle').textContent = t.modalAddTitle;
+    document.getElementById('productId').value = '';
+    document.getElementById('productForm').reset();
+    document.getElementById('imagePreview').classList.remove('show');
     document.getElementById('productImage').value = '';
+    document.getElementById('productImageUrl').value = '';
+    document.getElementById('isPromotion').checked = false;
+    document.getElementById('promoOptions').style.display = 'none';
+    document.getElementById('discountPercent').value = '';
+    document.getElementById('promotionPrice').value = '';
+    document.querySelector('input[name="promoType"][value="percent"]').checked = true;
+    document.getElementById('percentGroup').style.display = 'block';
+    document.getElementById('fixedPriceGroup').style.display = 'none';
+    document.getElementById('previewPriceDisplay').textContent = '-';
+    document.getElementById('submitBtn').textContent = t.submitAdd;
     document.getElementById('productModal').classList.add('active');
 }
-        function closeModal() { document.getElementById('productModal').classList.remove('active'); }
 
-        function previewImage() {
+function closeModal() { document.getElementById('productModal').classList.remove('active'); }
+
+      function previewImage() {
             const file = document.getElementById('productImage').files[0];
+            const url = document.getElementById('productImageUrl').value;
+            const preview = document.getElementById('imagePreview');
+            
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const preview = document.getElementById('imagePreview');
                     preview.src = e.target.result;
                     preview.classList.add('show');
                 };
                 reader.readAsDataURL(file);
+            } else if (url && url.trim() !== '') {
+                preview.src = url.trim();
+                preview.classList.add('show');
+            } else {
+                preview.classList.remove('show');
             }
         }
 
+// 监听URL输入变化
+document.getElementById('productImageUrl')?.addEventListener('input', previewImage);
         async function uploadImage(file) {
             if (!file) return null;
             if (file.size > 2 * 1024 * 1024) { showToast('L\'image ne doit pas dépasser 2MB', 'warning'); return null; }
@@ -1652,7 +1680,7 @@ async function openEditModal(productId) {
             return urlData.publicUrl;
         }
 
-   async function submitProduct(e) {
+async function submitProduct(e) {
     e.preventDefault();
     const id = document.getElementById('productId').value;
     const nameFr = document.getElementById('productNameFr').value.trim();
@@ -1661,7 +1689,6 @@ async function openEditModal(productId) {
     const price = parseFloat(document.getElementById('productPrice').value);
     const quantity = parseInt(document.getElementById('productQuantity').value) || 0;
     const isPromotion = document.getElementById('isPromotion').checked;
-    const imageFile = document.getElementById('productImage').files[0];
     const t = translations[currentLang];
     
     if (!nameFr || !nameZh) { showToast('Veuillez entrer le nom en français et en chinois', 'warning'); return; }
@@ -1685,11 +1712,20 @@ async function openEditModal(productId) {
     submitBtn.textContent = t.saving;
     
     try {
+        // 获取图片（优先使用上传的文件，否则使用URL）
         let imageUrl = null;
-        if (imageFile) imageUrl = await uploadImage(imageFile);
-        else if (id) { const existing = products.find(p => p.id === id); imageUrl = existing?.image_url; }
+        const imageFile = document.getElementById('productImage').files[0];
+        const imageUrlInput = document.getElementById('productImageUrl').value.trim();
+
+        if (imageFile) {
+            imageUrl = await uploadImage(imageFile);
+        } else if (imageUrlInput !== '') {
+            imageUrl = imageUrlInput;
+        } else if (id) {
+            const existing = products.find(p => p.id === id);
+            imageUrl = existing?.image_url;
+        }
         
-        // 🔧 修改：添加 name 字段（必填）
         const productData = {
             name_fr: nameFr,
             name_zh: nameZh,
@@ -1718,7 +1754,7 @@ async function openEditModal(productId) {
     }
     finally { submitBtn.disabled = false; submitBtn.textContent = id ? t.submitEdit : t.submitAdd; }
 }
-        window.triggerImageUpload = function(productId) {
+window.triggerImageUpload = function(productId) {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
