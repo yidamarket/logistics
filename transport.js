@@ -653,7 +653,7 @@ window.openNavigation = function(address) {
                     .from('transports')
                     .select('*')
                     .eq('id', transportId)
-                    .single();
+                    .single(); 
                 if (data) {
                     currentTransportId = transportId;
                     editTransportCompany.value = data.company;
@@ -681,7 +681,7 @@ window.openNavigation = function(address) {
                     .from('orders')
                     .select('*')
                     .eq('id', orderId)
-                    .single();
+                    .single(); 
                 if (data) {
                     currentEditOrderId = orderId;
                     editOrderCustomer.value = data.customer_name || '';
@@ -709,7 +709,7 @@ window.openNavigation = function(address) {
                     .from('tasks')
                     .select('*')
                     .eq('id', taskId)
-                    .single();
+                    .single(); 
                 if (data) {
                     if (isResponsable() && data.created_by !== currentUser) {
                         alert('Vous ne pouvez modifier que les tâches que vous avez créées');
@@ -729,7 +729,8 @@ window.openNavigation = function(address) {
                     .from('tasks')
                     .select('created_by')
                     .eq('id', taskId)
-                    .single();
+                    .single() ; 
+   
                 
                 if (data) {
                     if (isResponsable() && data.created_by !== currentUser) {
@@ -754,7 +755,8 @@ window.openNavigation = function(address) {
                     .from('users')
                     .select('*')
                     .eq('username', username)
-                    .single();
+                    .single()
+                    .eq('active', true); 
                 if (data) {
                     currentEditUserId = username;
                     editUserUsername.value = data.username || '';
@@ -935,48 +937,15 @@ window.deleteUser = async function(username) {
             geocodeAllBtn.addEventListener('click', geocodeAllOrders);
 
             // ==================== 加载司机列表（并建立电话映射表）====================
-            async function loadDrivers() {
-                try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('username, phone')
-                        .eq('user_type', USER_TYPES.CHAUFFEUR);
-                    if (data) {
-                        // 构建司机电话映射表，供短信使用
-                        window.driverPhoneMap = {};
-                        data.forEach(driver => {
-                            window.driverPhoneMap[driver.username] = driver.phone || '';
-                        });
-                        
-                        // 保存当前司机的电话到全局变量
-                        const currentChauffeur = data.find(d => d.username === currentUser);
-                        if (currentChauffeur) {
-                            window.chauffeurPhone = currentChauffeur.phone;
-                            console.log('当前司机电话:', window.chauffeurPhone);
-                        }
-                        
-                        // 填充司机选择下拉框
-                        if (driverSelect) {
-                            driverSelect.innerHTML = '<option value="">Choisir</option>';
-                            data.forEach(driver => {
-                                const option = document.createElement('option');
-                                option.value = driver.username;
-                                option.textContent = driver.phone ? `${driver.username} (${driver.phone})` : driver.username;
-                                driverSelect.appendChild(option);
-                            });
-                        }
-                    }
-                } catch (e) {
-                    console.error('loadDrivers异常:', e);
-                }
-            }
+           
 
             async function loadAdminDrivers() {
                 try {
                     const { data, error } = await supabase
                         .from('users')
                         .select('username, phone')
-                        .eq('user_type', USER_TYPES.CHAUFFEUR);
+                        .eq('user_type', USER_TYPES.CHAUFFEUR)
+                        .eq('active', true); 
                     
                     if (error) {
                         console.error('加载司机列表错误:', error);
@@ -1002,7 +971,8 @@ window.deleteUser = async function(username) {
                     const { data, error } = await supabase
                         .from('users')
                         .select('username, phone')
-                        .eq('user_type', USER_TYPES.CHAUFFEUR);
+                        .eq('user_type', USER_TYPES.CHAUFFEUR)
+                         .eq('active', true);  // 添加：只加载在职司机
                     if (data) {
                         selectElement.innerHTML = '<option value="">Choisir</option>';
                         data.forEach(driver => {
@@ -1016,6 +986,48 @@ window.deleteUser = async function(username) {
                     console.error('loadDriversIntoSelect异常:', e);
                 }
             }
+            // ==================== 加载司机列表（全局下拉框）====================
+async function loadDrivers() {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('username, phone')
+            .eq('user_type', USER_TYPES.CHAUFFEUR)
+            .eq('active', true);
+        
+        if (error) {
+            console.error('加载司机列表错误:', error);
+            return;
+        }
+        
+        if (data) {
+            // 建立电话映射表
+            window.driverPhoneMap = {};
+            data.forEach(driver => {
+                window.driverPhoneMap[driver.username] = driver.phone || '';
+            });
+            
+            // 当前司机电话
+            const currentChauffeur = data.find(d => d.username === currentUser);
+            if (currentChauffeur) {
+                window.chauffeurPhone = currentChauffeur.phone;
+            }
+            
+            // 填充添加订单时的司机下拉框
+            if (driverSelect) {
+                driverSelect.innerHTML = '<option value="">Choisir</option>';
+                data.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.username;
+                    option.textContent = driver.phone ? `${driver.username} (${driver.phone})` : driver.username;
+                    driverSelect.appendChild(option);
+                });
+            }
+        }
+    } catch (e) {
+        console.error('loadDrivers异常:', e);
+    }
+}
 
             // ==================== 加载任务负责人 ====================
             async function loadTaskAssignees() {
@@ -1023,7 +1035,8 @@ window.deleteUser = async function(username) {
                     const { data, error } = await supabase
                         .from('users')
                         .select('username')
-                        .in('user_type', [USER_TYPES.PREPARATEUR, USER_TYPES.CHAUFFEUR, USER_TYPES.RESPONSABLE, USER_TYPES.SECRETAIRE, USER_TYPES.MANAGER]);
+                        .in('user_type', [USER_TYPES.PREPARATEUR, USER_TYPES.CHAUFFEUR, USER_TYPES.RESPONSABLE, USER_TYPES.SECRETAIRE, USER_TYPES.MANAGER])
+                          .eq('active', true);  // 添加：只加载在职司机;
                     if (data && taskAssignee) {
                         taskAssignee.innerHTML = '<option value="">Choisir</option>';
                         data.forEach(user => {
@@ -1043,7 +1056,8 @@ window.deleteUser = async function(username) {
                     const { data, error } = await supabase
                         .from('users')
                         .select('username')
-                        .in('user_type', [USER_TYPES.PREPARATEUR, USER_TYPES.CHAUFFEUR, USER_TYPES.RESPONSABLE, USER_TYPES.SECRETAIRE, USER_TYPES.MANAGER]);
+                        .in('user_type', [USER_TYPES.PREPARATEUR, USER_TYPES.CHAUFFEUR, USER_TYPES.RESPONSABLE, USER_TYPES.SECRETAIRE, USER_TYPES.MANAGER])
+                         .eq('active', true);  // 添加：只加载在职司机;
                     if (data) {
                         selectElement.innerHTML = '<option value="">Choisir</option>';
                         data.forEach(user => {
@@ -1069,7 +1083,9 @@ window.deleteUser = async function(username) {
                     const { data, error } = await supabase
                         .from('users')
                         .select('*')
-                        .order('created_at', { ascending: false });
+                        .order('created_at', { ascending: false })
+                         .eq('active', true);  // 添加：只加载在职司机;
+
                     
                     if (error) {
                         console.error('加载用户列表错误:', error);
@@ -2556,7 +2572,7 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
             // 用户管理部分
             if (hasAdminRights) {
                 console.log('显示用户管理部分');
-                adminSection.style.display = 'block';
+                adminSection.style.display = 'none';
                 loadUsers();
             } else {
                 adminSection.style.display = 'none';

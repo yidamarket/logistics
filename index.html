@@ -755,7 +755,8 @@
                 stockDesc: "Produits, inventaire, réapprovisionnement",
                 adminTitle: "Administration",
                 adminDesc: "Gestion des commandes et clients",
-                logoutBtn: "Déconnexion"
+                logoutBtn: "Déconnexion",
+                account_disabled: 'Ce compte a été désactivé, veuillez contacter l\'administrateur',
             },
             zh: {
                 brandTitle: "管理您的<span>物流</span><br>和<span>人力资源</span>",
@@ -763,6 +764,7 @@
                 feature1: "<strong>运输管理</strong> — 管理您的配送并优化路线",
                 feature2: "<strong>人力资源</strong> — 休假、打卡、团队排班",
                 feature3: "<strong>库存管理</strong> — 产品、库存、补货提醒",
+                account_disabled: 'This account has been disabled, please contact administrator',
                 welcomeText: "欢迎回来",
                 welcomeSub: "登录以访问您的空间",
                 usernameLabel: "用户名",
@@ -862,43 +864,53 @@
                 showApps(savedSession);
             }
 
-            document.getElementById('loginBtn').addEventListener('click', async () => {
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-                const remember = document.getElementById('remember').checked;
-                const t = translations[currentLang];
-                if (!username || !password) {
-                    showToast(t.loginErrorEmpty, 'warning');
-                    return;
-                }
-                const btn = document.getElementById('loginBtn');
-                btn.disabled = true;
-                btn.textContent = t.loginLoading;
-                try {
-                    const { data, error } = await window.supabase
-                        .from('users')
-                        .select('*')
-                        .eq('username', username)
-                        .eq('password', password)
-                        .maybeSingle();
-                    if (data) {
-                        const session = window.saveSession(data, remember);
-                        showApps(session);
-                        showToast(`Bienvenue ${username}`, 'success');
-                    } else {
-                        showToast(t.loginErrorInvalid, 'error');
-                        btn.disabled = false;
-                        btn.textContent = t.loginBtn;
-                    }
-                } catch (err) {
-                    showToast(t.loginErrorSystem, 'error');
-                    btn.disabled = false;
-                    btn.textContent = t.loginBtn;
-                    console.error(err);
-                }
-            });
-
-            document.getElementById('password').addEventListener('keypress', (e) => {
+         document.getElementById('loginBtn').addEventListener('click', async () => {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const remember = document.getElementById('remember').checked;
+    const t = translations[currentLang];
+    if (!username || !password) {
+        showToast(t.loginErrorEmpty, 'warning');
+        return;
+    }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = t.loginLoading;
+    try {
+        const { data, error } = await window.supabase
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .eq('password', password)
+            .eq('active', true)
+            .maybeSingle();
+        if (data) {
+            const session = window.saveSession(data, remember);
+            showApps(session);
+            showToast(`Bienvenue ${username}`, 'success');
+        } else {
+            const { data: inactiveUser } = await window.supabase
+                .from('users')
+                .select('active')
+                .eq('username', username)
+                .maybeSingle();
+            
+            if (inactiveUser && inactiveUser.active === false) {
+                showToast(t.account_disabled, 'error');
+            } else {
+                showToast(t.loginErrorInvalid, 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = t.loginBtn;
+        }
+    } catch (err) {
+        showToast(t.loginErrorSystem, 'error');
+        btn.disabled = false;
+        btn.textContent = t.loginBtn;
+        console.error(err);
+    }
+});
+document.getElementById('password').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     document.getElementById('loginBtn').click();
                 }
@@ -942,30 +954,52 @@
     const rhCard = document.getElementById('rhLink');
     const stockCard = document.getElementById('stockLink');
     const adminLink = document.getElementById('adminLink');
-    
     if (session.userType === 'employe') {
-        // 普通员工：只显示人力资源和管理后台
-        transportCard.style.display = 'none';
-        rhCard.style.display = 'flex';
-        stockCard.style.display = 'none';
-        
-        // 普通员工也可以进入管理后台
-        adminLink.style.display = 'flex';
-        adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
-    } else if (session.userType === 'admin' || session.userType === 'manager' || session.userType === 'secretaire') {
-        // 管理员/经理/秘书：显示所有模块 + 管理后台
-        transportCard.style.display = 'flex';
-        rhCard.style.display = 'flex';
-        stockCard.style.display = 'flex';
-        adminLink.style.display = 'flex';
-        adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
-    } else {
-        // 其他角色（preparateur、chauffeur、responsable）：只显示三个主模块，不显示管理后台
-        transportCard.style.display = 'flex';
-        rhCard.style.display = 'flex';
-        stockCard.style.display = 'flex';
-        adminLink.style.display = 'none';
-    }
+    // 普通员工：只有人力资源 + 后台管理（没有运输）
+    transportCard.style.display = 'none';
+    rhCard.style.display = 'flex';
+    stockCard.style.display = 'none';
+    adminLink.style.display = 'flex';
+    adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
+} 
+else if (session.userType === 'chauffeur') {
+    // 司机：运输 + 人力资源
+    transportCard.style.display = 'flex';
+    rhCard.style.display = 'flex';
+    stockCard.style.display = 'none';
+    adminLink.style.display = 'none';
+}
+else if (session.userType === 'preparateur') {
+    // 备货员：运输 + 人力资源
+    transportCard.style.display = 'flex';
+    rhCard.style.display = 'flex';
+    stockCard.style.display = 'none';
+    adminLink.style.display = 'none';
+}
+else if (session.userType === 'responsable') {
+    // 主管：运输 + 人力资源 + 库存
+    transportCard.style.display = 'flex';
+    rhCard.style.display = 'flex';
+    stockCard.style.display = 'flex';
+    adminLink.style.display = 'none';
+}
+else if (session.userType === 'secretaire' || session.userType === 'manager' || session.userType === 'admin') {
+    // 秘书/经理/管理员：全部模块 + 后台管理
+    transportCard.style.display = 'flex';
+    rhCard.style.display = 'flex';
+    stockCard.style.display = 'flex';
+    adminLink.style.display = 'flex';
+    adminLink.href = `admin/admin.html?session=${sessionParam}&lang=${currentLang}`;
+}
+else {
+    // 其他未知角色：默认三个主模块，无管理后台
+    transportCard.style.display = 'flex';
+    rhCard.style.display = 'flex';
+    stockCard.style.display = 'flex';
+    adminLink.style.display = 'none';
+}
+    
+
     
     // 更新多语言文本
     const t = translations[currentLang];

@@ -11,18 +11,15 @@
     <script src="rh.js" defer></script>
 </head>
 <body>
-    <div class="lang-bar">
-        <button class="lang-btn" data-lang="zh">🇨🇳 中文</button>
-        <button class="lang-btn" data-lang="en">🇬🇧 English</button>
-        <button class="lang-btn" data-lang="fr">🇫🇷 Français</button>
-    </div>
+  
 
     <div class="app-container">
         <div class="nav-bar">
+             <div class="user-info-bar">
             <button class="back-home" onclick="window.location.href='index.html'">
                 <span>🏠</span> <span data-i18n="home">首页</span>
             </button>
-            <div class="user-info-bar">
+           
                 <div class="datetime-weather">
                     <div class="datetime">
                         <div class="date-box" id="currentDate"></div>
@@ -34,10 +31,16 @@
                         <span class="weather-city">Vitry</span>
                     </div>
                 </div>
-                <div class="user-details">
+                 <div class="user-details">
+                  <div class="lang-switch">
+                    <button class="lang-btn" data-lang="zh" title="中文">🇨🇳 中文</button>
+                    <button class="lang-btn" data-lang="en" title="English">🇬🇧 EN</button>
+                    <button class="lang-btn" data-lang="fr" title="Français">🇫🇷 FR</button>
+                </div>
+               
                     <span class="user-name-badge" id="currentUserDisplay">👤 </span>
                     <span class="user-type-badge" id="userTypeDisplay"></span>
-                    <button class="logout-btn" id="logoutBtn" data-i18n="logout">退出登录</button>
+                    
                 </div>
             </div>
         </div>
@@ -91,15 +94,21 @@
                 </div>
                 <div class="calendar-container"><table class="team-calendar" id="teamCalendar"><thead id="calendarHeader"></thead><tbody id="calendarBody"></tbody>⁻</table></div>
                 <div class="legend">
-                    <div class="legend-item"><span class="legend-color working"></span><span data-i18n="legend_present">出勤</span></div>
-                    <div class="legend-item"><span class="legend-color absent"></span><span data-i18n="legend_absent">缺勤</span></div>
-                    <div class="legend-item"><span class="legend-color leave"></span><span data-i18n="legend_leave">请假</span></div>
-                    <div class="legend-item"><span class="legend-color holiday"></span><span data-i18n="legend_holiday">法定假日</span></div>
-                    <div class="legend-item"><span class="legend-color overtime"></span><span data-i18n="legend_overtime">加班</span></div>
-                    <div class="legend-item"><span class="legend-color weekend"></span><span data-i18n="legend_weekend">周末</span></div>
-                    <div class="legend-item"><span class="legend-color mission"></span><span data-i18n="legend_mission">外勤/派送</span></div>
-                    <div class="legend-item"><span class="legend-color sick"></span><span data-i18n="legend_sick">病假</span></div>
-                    <div class="legend-item"><span class="legend-color halfday"></span><span data-i18n="legend_halfday">半天出勤</span></div>
+                    <div class="legend-item"><span data-i18n="legend_present">✅ 出勤</span></div>
+                    <div class="legend-item"><span data-i18n="legend_absent">❌ 缺勤</span></div>
+                    <div class="legend-item"><span data-i18n="legend_conges_payes">🏖️ 带薪假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_maladie">🤒 病假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_maternite_paternite">👶 产假/陪产假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_sans_solde">💰 无薪假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_school">📚 学校假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_mariage">💍 婚假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_deces">🕊️ 丧假</span></div>
+                    <div class="legend-item"><span data-i18n="legend_evenement">🏠 家庭事件</span></div>
+                    <div class="legend-item"><span data-i18n="legend_holiday">📅 法定假日</span></div>
+                    <div class="legend-item"><span data-i18n="legend_weekend">🌙 周末</span></div>
+                    <div class="legend-item"><span data-i18n="legend_mission">🚚 外勤/派送</span></div>
+                    <div class="legend-item"><span data-i18n="legend_halfday">½ 半天出勤</span></div>
+                    <div class="legend-item"><span data-i18n="legend_abnormal">⚠️ 异常</span></div>
                 </div>
             </div>
         </div>

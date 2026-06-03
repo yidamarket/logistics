@@ -9,7 +9,7 @@ let currentLanguage = 'zh';
 let isManager = false;
 let canEditAttendance = false;
 let translations = {};
-
+let isCalendarLoading = false;  // 添加这一行
 // ============================================================================
 // 辅助函数
 // ============================================================================
@@ -64,16 +64,11 @@ function showModal(options) {
         modalIcon.textContent = icons[options.icon] || 'ℹ️';
         modalTitle.textContent = options.title || '';
         
-        // 支持 HTML 内容
-        if (options.isHtml) {
-            modalMessage.innerHTML = options.message || '';
-        } else {
-            modalMessage.textContent = options.message || '';
-        }
-        
+        // 重置显示状态
         selectContainer.style.display = 'none';
         inputContainer.style.display = 'none';
         
+        // 先设置 select 和 input
         if (options.select) {
             selectContainer.style.display = 'block';
             select.innerHTML = options.select.options.map(function(opt) {
@@ -87,6 +82,13 @@ function showModal(options) {
             input.placeholder = options.inputPlaceholder || '';
         }
         
+        // 最后设置 message（确保不被覆盖）
+        if (options.isHtml) {
+            modalMessage.innerHTML = options.message || '';
+        } else {
+            modalMessage.textContent = options.message || '';
+        }
+        
         actions.innerHTML = '';
         
         options.buttons.forEach(function(btn) {
@@ -94,7 +96,6 @@ function showModal(options) {
             button.className = 'custom-modal-btn ' + btn.type;
             button.textContent = btn.text;
             button.onclick = function() {
-                // 收集表单数据
                 let formData = null;
                 if (options.isHtml) {
                     formData = {};
@@ -213,6 +214,7 @@ const translationsData = {
         tab_pending_cancel: '待批取消',
         tab_employee_management: '员工管理',
         tab_pending_attendance: '待批打卡',
+        tab_my_profile: '我的资料',
         
         // ========== 打卡 ==========
         check_in: '✅ 上班打卡',
@@ -274,6 +276,10 @@ const translationsData = {
         my_balance: '我的余额',
         my_today_attendance: '今日打卡记录',
         my_leave_history: '我的请假历史',
+        my_profile: '我的资料',
+        change_password: '修改密码',
+        save_changes: '保存修改',
+        profile_updated: '个人资料已更新',
         
         // ========== 日历 ==========
         team_planning: '团队日程',
@@ -282,16 +288,27 @@ const translationsData = {
         export_excel: '导出Excel',
         
         // ========== 图例 ==========
-        legend_present: '出勤',
-        legend_absent: '缺勤',
-        legend_leave: '请假',
-        legend_holiday: '法定假日',
-        legend_weekend: '周末',
-        legend_mission: '外勤',
-        legend_sick: '病假',
-        legend_halfday: '半天',
-        legend_overtime: '加班',
-        
+        legend_present: '✅ 出勤',
+        legend_absent: '❌ 缺勤',
+        legend_conges_payes: '🏖️ 带薪假',
+        legend_maladie: '🤒 病假',
+        legend_maternite_paternite: '👶 产假/陪产假',
+        legend_sans_solde: '💰 无薪假',
+        legend_school: '📚 学校假',
+        legend_mariage: '💍 婚假',
+        legend_deces: '🕊️ 丧假',
+        legend_evenement: '🏠 家庭事件',
+        legend_holiday: '🎉 法定假日',
+        legend_weekend: '🌙 周末',
+        legend_mission: '🚚 外勤',
+        legend_halfday: '½ 半天',
+        legend_abnormal: '⚠️ 异常(不足8小时/缺下班卡)',
+        confirm_password: '确认密码',
+        new_password: '新密码',
+        leave_blank_to_keep: '留空则不修改',
+        password_mismatch: '两次输入的密码不一致',
+
+
         // ========== 出勤统计 ==========
         attendance_stats: '出勤统计',
         attendance_status: '出勤状态',
@@ -302,6 +319,7 @@ const translationsData = {
         halfday: '半天',
         confirm_delete: '确认删除',
         delete_warning: '此操作不可恢复，员工的所有数据将被永久删除！',
+        
         // ========== 工时异常 ==========
         need_review_yes: '待审核',
         no_abnormal_records: '暂无工时异常记录',
@@ -312,11 +330,9 @@ const translationsData = {
         no_check_in_found: '未找到上班打卡记录',
         select_checkout_time: '请选择实际下班时间',
         abnormal_fixed: '异常处理：确认为正常',
-        tab_my_profile: '我的资料',
-        my_profile: '我的资料',
-        change_password: '修改密码',
-        save_changes: '保存修改',
-        profile_updated: '个人资料已更新',
+        fix_abnormal: '处理异常（补录下班时间）',
+        current_status: '当前状态',
+        
         // ========== Excel ==========
         employee: '员工',
         role: '角色',
@@ -368,11 +384,13 @@ const translationsData = {
         chauffeur: 'Driver',
         responsable: 'Supervisor',
         employe: 'Employee',
-        confirm_delete: 'Confirm Delete',
-        delete_warning: 'This action cannot be undone! All employee data will be permanently deleted!',
-        not_set: 'Not set',
-        readonly_fields_note: 'Contract type, hire date and other sensitive information cannot be modified. Please contact administrator.',
-        // ========== General ==========
+        // 在 en 中添加
+        confirm_password: 'Confirm Password',
+        new_password: 'New Password',
+        leave_blank_to_keep: 'Leave blank to keep unchanged',
+        password_mismatch: 'Passwords do not match',
+
+
         home: 'Home',
         logout: 'Logout',
         loading: 'Loading...',
@@ -401,12 +419,7 @@ const translationsData = {
         employee_deleted: 'Employee deleted',
         last_modified: 'Last modified',
         close: 'Close',
-        tab_my_profile: 'My Profile',
-        my_profile: 'My Profile',
-        change_password: 'Change Password',
-        save_changes: 'Save Changes',
-        profile_updated: 'Profile updated',
-
+        
         // ========== Tab titles ==========
         tab_my_leaves: 'My Leaves',
         tab_team_calendar: 'Team Calendar',
@@ -417,6 +430,7 @@ const translationsData = {
         tab_pending_cancel: 'Pending Cancel',
         tab_employee_management: 'Employee Management',
         tab_pending_attendance: 'Pending Attendance',
+        tab_my_profile: 'My Profile',
         
         // ========== Check in/out ==========
         check_in: '✅ Check In',
@@ -478,6 +492,10 @@ const translationsData = {
         my_balance: 'My Balance',
         my_today_attendance: "Today's Attendance",
         my_leave_history: 'My Leave History',
+        my_profile: 'My Profile',
+        change_password: 'Change Password',
+        save_changes: 'Save Changes',
+        profile_updated: 'Profile updated',
         
         // ========== Calendar ==========
         team_planning: 'Team Planning',
@@ -486,15 +504,21 @@ const translationsData = {
         export_excel: 'Export Excel',
         
         // ========== Legend ==========
-        legend_present: 'Present',
-        legend_absent: 'Absent',
-        legend_leave: 'Leave',
-        legend_holiday: 'Holiday',
-        legend_weekend: 'Weekend',
-        legend_mission: 'Mission',
-        legend_sick: 'Sick',
-        legend_halfday: 'Half Day',
-        legend_overtime: 'Overtime',
+        legend_present: '✅ Present',
+        legend_absent: '❌ Absent',
+        legend_conges_payes: '🏖️ Paid leave',
+        legend_maladie: '🤒 Sick leave',
+        legend_maternite_paternite: '👶 Maternity/Paternity',
+        legend_sans_solde: '💰 Unpaid leave',
+        legend_school: '📚 School leave',
+        legend_mariage: '💍 Marriage leave',
+        legend_deces: '🕊️ Bereavement',
+        legend_evenement: '🏠 Family events',
+        legend_holiday: '🎉 Public holiday',
+        legend_weekend: '🌙 Weekend',
+        legend_mission: '🚚 Field work',
+        legend_halfday: '½ Half day',
+        legend_abnormal: '⚠️ Anomaly (less than 8h/missing check-out)',
         
         // ========== Attendance stats ==========
         attendance_stats: 'Attendance Statistics',
@@ -504,6 +528,8 @@ const translationsData = {
         mission: 'Mission',
         sick: 'Sick',
         halfday: 'Half Day',
+        confirm_delete: 'Confirm Delete',
+        delete_warning: 'This action cannot be undone! All employee data will be permanently deleted!',
         
         // ========== Abnormal hours ==========
         need_review_yes: 'Pending Review',
@@ -515,6 +541,8 @@ const translationsData = {
         no_check_in_found: 'No check-in record found',
         select_checkout_time: 'Please select actual check-out time',
         abnormal_fixed: 'Abnormal fixed: confirmed as normal',
+        fix_abnormal: 'Fix abnormal (record check-out time)',
+        current_status: 'Current status',
         
         // ========== Excel ==========
         employee: 'Employee',
@@ -525,6 +553,8 @@ const translationsData = {
         mission_days: 'Mission Days',
         day_off: 'Off',
         export_success: 'Export Success',
+        not_set: 'Not set',
+        readonly_fields_note: 'Contract type, hire date and other sensitive information cannot be modified. Please contact administrator.',
         
         // ========== Monthly leave ==========
         monthly_leave_added: '✅ 2.5 days added',
@@ -559,16 +589,16 @@ const translationsData = {
     fr: {
         // ========== Rôles ==========
         admin: 'Administrateur',
-        not_set: 'Non défini',
-        readonly_fields_note: 'Type de contrat, date d\'embauche et autres informations sensibles ne peuvent pas être modifiés. Veuillez contacter l\'administrateur.',
         manager: 'Manager',
         secretaire: 'Secrétaire',
         preparateur: 'Préparateur',
         chauffeur: 'Chauffeur',
         responsable: 'Responsable',
         employe: 'Employé',
-        confirm_delete: 'Confirmer la suppression',
-        delete_warning: 'Cette action est irréversible ! Toutes les données de l\'employé seront définitivement supprimées !',
+        confirm_password: 'Confirmer le mot de passe',
+        new_password: 'Nouveau mot de passe',
+        leave_blank_to_keep: 'Laisser vide pour ne pas changer',
+        password_mismatch: 'Les mots de passe ne correspondent pas',
         // ========== Général ==========
         home: 'Accueil',
         logout: 'Déconnexion',
@@ -598,11 +628,7 @@ const translationsData = {
         employee_deleted: 'Employé supprimé',
         last_modified: 'Dernière modification',
         close: 'Fermer',
-        tab_my_profile: 'Mon profil',
-        my_profile: 'Mon profil',
-        change_password: 'Changer le mot de passe',
-        save_changes: 'Enregistrer',
-        profile_updated: 'Profil mis à jour',
+        
         // ========== Titres des onglets ==========
         tab_my_leaves: 'Mes congés',
         tab_team_calendar: 'Calendrier équipe',
@@ -613,6 +639,7 @@ const translationsData = {
         tab_pending_cancel: 'Annulations à valider',
         tab_employee_management: 'Gestion employés',
         tab_pending_attendance: 'Pointages en attente',
+        tab_my_profile: 'Mon profil',
         
         // ========== Pointage ==========
         check_in: '✅ Arrivée',
@@ -674,6 +701,10 @@ const translationsData = {
         my_balance: 'Mon solde',
         my_today_attendance: "Pointage aujourd'hui",
         my_leave_history: 'Historique congés',
+        my_profile: 'Mon profil',
+        change_password: 'Changer le mot de passe',
+        save_changes: 'Enregistrer',
+        profile_updated: 'Profil mis à jour',
         
         // ========== Calendrier ==========
         team_planning: 'Planning équipe',
@@ -682,15 +713,21 @@ const translationsData = {
         export_excel: 'Exporter Excel',
         
         // ========== Légende ==========
-        legend_present: 'Présent',
-        legend_absent: 'Absent',
-        legend_leave: 'Congé',
-        legend_holiday: 'Férié',
-        legend_weekend: 'Weekend',
-        legend_mission: 'Mission',
-        legend_sick: 'Maladie',
-        legend_halfday: 'Demi-journée',
-        legend_overtime: 'Heures sup.',
+        legend_present: '✅ Présent',
+        legend_absent: '❌ Absent',
+        legend_conges_payes: '🏖️ Congés payés',
+        legend_maladie: '🤒 Maladie',
+        legend_maternite_paternite: '👶 Congé maternité/paternité',
+        legend_sans_solde: '💰 Congé sans solde',
+        legend_school: '📚 École',
+        legend_mariage: '💍 Congés mariage',
+        legend_deces: '🕊️ Congés décès',
+        legend_evenement: '🏠 Événements familiaux',
+        legend_holiday: '🎉 Férié',
+        legend_weekend: '🌙 Weekend',
+        legend_mission: '🚚 Mission',
+        legend_halfday: '½ Demi-journée',
+        legend_abnormal: '⚠️ Anomalie (moins de 8h/sortie manquante)',
         
         // ========== Statistiques de présence ==========
         attendance_stats: 'Statistiques',
@@ -700,6 +737,8 @@ const translationsData = {
         mission: 'Mission',
         sick: 'Malade',
         halfday: 'Demi-journée',
+        confirm_delete: 'Confirmer la suppression',
+        delete_warning: 'Cette action est irréversible ! Toutes les données de l\'employé seront définitivement supprimées !',
         
         // ========== Heures anormales ==========
         need_review_yes: 'À vérifier',
@@ -711,6 +750,8 @@ const translationsData = {
         no_check_in_found: 'Aucun pointage d\'arrivée trouvé',
         select_checkout_time: 'Sélectionnez l\'heure de départ réelle',
         abnormal_fixed: 'Anomalie corrigée : confirmé normal',
+        fix_abnormal: 'Corriger l\'anomalie (enregistrer l\'heure de départ)',
+        current_status: 'Statut actuel',
         
         // ========== Excel ==========
         employee: 'Employé',
@@ -721,6 +762,8 @@ const translationsData = {
         mission_days: 'Jours mission',
         day_off: 'Repos',
         export_success: 'Export réussi',
+        not_set: 'Non défini',
+        readonly_fields_note: 'Type de contrat, date d\'embauche et autres informations sensibles ne peuvent pas être modifiés. Veuillez contacter l\'administrateur.',
         
         // ========== Ajout mensuel ==========
         monthly_leave_added: '✅ 2.5 jours ajoutés',
@@ -916,8 +959,11 @@ function setLanguage(lang) {
         loadPendingCancelRequests();
     }
     
+    // 刷新日历（防抖处理）
     if (document.getElementById('tab-team-calendar')?.classList.contains('active')) {
-        loadTeamCalendar();
+        setTimeout(function() {
+            loadTeamCalendar();
+        }, 100);
     }
 }
 
@@ -1198,6 +1244,7 @@ async function loadEmployeeList() {
 // 员工管理 - 独立弹窗
 // ============================================================================
 // 显示员工详情编辑弹窗
+// 显示员工详情编辑弹窗
 window.openEditEmployeeModal = async function(userId) {
     const { data: emp, error } = await supabase
         .from('users')
@@ -1210,14 +1257,12 @@ window.openEditEmployeeModal = async function(userId) {
         return;
     }
     
-    // 获取管理员信息
     const { data: adminUser } = await supabase
         .from('users')
         .select('username')
         .eq('id', currentUserId)
         .single();
     
-    // 用户类型选项
     const userTypeOptions = [
         { value: 'chauffeur', label: t('chauffeur') },
         { value: 'employe', label: t('employe') },
@@ -1227,7 +1272,6 @@ window.openEditEmployeeModal = async function(userId) {
         { value: 'admin', label: t('admin') }
     ];
     
-    // 婚姻状况选项
     const maritalOptions = [
         { value: 'single', label: t('single') },
         { value: 'married', label: t('married') },
@@ -1235,7 +1279,6 @@ window.openEditEmployeeModal = async function(userId) {
         { value: 'widowed', label: t('widowed') }
     ];
     
-    // 合同类型选项
     const contractOptions = [
         { value: 'CDI', label: 'CDI' },
         { value: 'CDD', label: 'CDD' },
@@ -1255,6 +1298,15 @@ window.openEditEmployeeModal = async function(userId) {
                     <select name="user_type" class="modal-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
                         ${userTypeOptions.map(opt => `<option value="${opt.value}" ${emp.user_type === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
                     </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <label><strong>🔐 ${t('password')}</strong> <span style="font-size: 11px; color: #999;">(${t('leave_blank_to_keep')})</span></label>
+                    <input type="password" name="password" class="modal-input" placeholder="${t('new_password')}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+                <div style="flex: 1;">
+                    <!-- 占位空白，保持布局 -->
                 </div>
             </div>
             <div style="display: flex; gap: 20px;">
@@ -1345,119 +1397,98 @@ window.openEditEmployeeModal = async function(userId) {
     });
     
     if (result.button === 'save') {
-        // 从 formData 获取数据（需要在 showModal 中收集）
-        // 如果没有 formData，则从当前 DOM 获取
-        let updates;
-        if (result.formData) {
-            updates = {
-                username: result.formData.username,
-                user_type: result.formData.user_type,
-                phone: result.formData.phone,
-                email: result.formData.email,
-                address: result.formData.address,
-                contract_type: result.formData.contract_type,
-                marital_status: result.formData.marital_status,
-                birth_date: result.formData.birth_date || null,
-                hire_date: result.formData.hire_date || null,
-                nationality: result.formData.nationality,
-                conges_payes: parseFloat(result.formData.conges_payes),
-                emergency_contact: result.formData.emergency_contact,
-                emergency_phone: result.formData.emergency_phone,
-                photo_url: result.formData.photo_url,
-                active: result.formData.active === 'true'
+        const formContainer = document.querySelector('.employee-edit-form');
+        if (formContainer) {
+            const newPassword = formContainer.querySelector('[name="password"]').value;
+            
+            const updates = {
+                username: formContainer.querySelector('[name="username"]').value,
+                user_type: formContainer.querySelector('[name="user_type"]').value,
+                phone: formContainer.querySelector('[name="phone"]').value,
+                email: formContainer.querySelector('[name="email"]').value,
+                address: formContainer.querySelector('[name="address"]').value,
+                contract_type: formContainer.querySelector('[name="contract_type"]').value,
+                marital_status: formContainer.querySelector('[name="marital_status"]').value,
+                birth_date: formContainer.querySelector('[name="birth_date"]').value || null,
+                hire_date: formContainer.querySelector('[name="hire_date"]').value || null,
+                nationality: formContainer.querySelector('[name="nationality"]').value,
+                conges_payes: parseFloat(formContainer.querySelector('[name="conges_payes"]').value),
+                emergency_contact: formContainer.querySelector('[name="emergency_contact"]').value,
+                emergency_phone: formContainer.querySelector('[name="emergency_phone"]').value,
+                photo_url: formContainer.querySelector('[name="photo_url"]').value,
+                active: formContainer.querySelector('[name="active"]').value === 'true'
             };
-        } else {
-            // 备用方案：从当前打开的弹窗中获取
-            const formContainer = document.querySelector('.employee-edit-form');
-            if (formContainer) {
-                updates = {
-                    username: formContainer.querySelector('[name="username"]').value,
-                    user_type: formContainer.querySelector('[name="user_type"]').value,
-                    phone: formContainer.querySelector('[name="phone"]').value,
-                    email: formContainer.querySelector('[name="email"]').value,
-                    address: formContainer.querySelector('[name="address"]').value,
-                    contract_type: formContainer.querySelector('[name="contract_type"]').value,
-                    marital_status: formContainer.querySelector('[name="marital_status"]').value,
-                    birth_date: formContainer.querySelector('[name="birth_date"]').value || null,
-                    hire_date: formContainer.querySelector('[name="hire_date"]').value || null,
-                    nationality: formContainer.querySelector('[name="nationality"]').value,
-                    conges_payes: parseFloat(formContainer.querySelector('[name="conges_payes"]').value),
-                    emergency_contact: formContainer.querySelector('[name="emergency_contact"]').value,
-                    emergency_phone: formContainer.querySelector('[name="emergency_phone"]').value,
-                    photo_url: formContainer.querySelector('[name="photo_url"]').value,
-                    active: formContainer.querySelector('[name="active"]').value === 'true'
-                };
+            
+            if (newPassword) {
+                updates.password = newPassword;
+            }
+            
+            const { error: updateError } = await supabase
+                .from('users')
+                .update(updates)
+                .eq('id', userId);
+            
+            if (updateError) {
+                showToast('❌ ' + t('error') + ': ' + updateError.message, 'error');
             } else {
-                showToast('❌ ' + t('error') + ': 无法获取表单数据', 'error');
-                return;
+                showToast('✅ ' + t('saved'), 'success');
+                document.getElementById('customModal').style.display = 'none';
+                await loadEmployeeList();
+                await loadAllBalances();
+                if (userId === currentUserId) {
+                    currentUserType = updates.user_type;
+                    document.getElementById('userTypeDisplay').innerHTML = t(updates.user_type);
+                }
             }
-        }
-        
-        const { error: updateError } = await supabase
-            .from('users')
-            .update(updates)
-            .eq('id', userId);
-        
-        if (updateError) {
-            showToast('❌ ' + t('error') + ': ' + updateError.message, 'error');
         } else {
-            showToast('✅ ' + t('saved'), 'success');
-            closeEditEmployeeModal();
-            await loadEmployeeList();
-            await loadAllBalances();
-            if (userId === currentUserId) {
-                currentUserType = updates.user_type;
-                document.getElementById('userTypeDisplay').innerHTML = t(updates.user_type);
-            }
+            showToast('❌ ' + t('error'), 'error');
         }
     }
     else if (result.button === 'delete') {
-    // 显示自定义删除确认对话框
-    const deleteConfirmHtml = `
-        <div style="text-align: center; padding: 10px;">
-            <div style="font-size: 48px; margin-bottom: 16px;">🗑️</div>
-            <div style="font-size: 20px; font-weight: 600; margin-bottom: 12px; color: #e74c3c;">${t('confirm_delete_title')}</div>
-            <div style="font-size: 14px; color: #666; margin-bottom: 20px;">${t('confirm_delete_message')}</div>
-            <div style="background: #fef3c7; border-radius: 12px; padding: 12px; margin-bottom: 20px;">
-                <div style="font-size: 13px; color: #92400e;">⚠️ ${t('delete_warning')}</div>
+        const deleteConfirmHtml = `
+            <div style="text-align: center; padding: 10px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🗑️</div>
+                <div style="font-size: 20px; font-weight: 600; margin-bottom: 12px; color: #e74c3c;">${t('confirm_delete_title')}</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 20px;">${t('confirm_delete_message')}</div>
+                <div style="background: #fef3c7; border-radius: 12px; padding: 12px; margin-bottom: 20px;">
+                    <div style="font-size: 13px; color: #92400e;">⚠️ ${t('delete_warning')}</div>
+                </div>
             </div>
-        </div>
-    `;
-    
-    const deleteResult = await showModal({
-        icon: 'warning',
-        title: t('confirm_delete_title'),
-        isHtml: true,
-        message: deleteConfirmHtml,
-        buttons: [
-            { text: '✅ ' + t('confirm_delete'), type: 'danger', value: 'confirm' },
-            { text: t('cancel'), type: 'cancel', value: 'cancel' }
-        ]
-    });
-    
-    if (deleteResult.button === 'confirm') {
-        if (userId === currentUserId) {
-            showToast('❌ ' + t('cannot_delete_self'), 'error');
-            return;
-        }
+        `;
         
-        const { error: deleteError } = await supabase
-            .from('users')
-            .delete()
-            .eq('id', userId);
+        const deleteResult = await showModal({
+            icon: 'warning',
+            title: t('confirm_delete_title'),
+            isHtml: true,
+            message: deleteConfirmHtml,
+            buttons: [
+                { text: '✅ ' + t('confirm_delete'), type: 'danger', value: 'confirm' },
+                { text: t('cancel'), type: 'cancel', value: 'cancel' }
+            ]
+        });
         
-        if (deleteError) {
-            showToast('❌ ' + t('error') + ': ' + deleteError.message, 'error');
-        } else {
-            showToast('✅ ' + t('employee_deleted'), 'success');
-            closeEditEmployeeModal();
-            await loadEmployeeList();
-            await loadAllBalances();
+        if (deleteResult.button === 'confirm') {
+            if (userId === currentUserId) {
+                showToast('❌ ' + t('cannot_delete_self'), 'error');
+                return;
+            }
+            
+            const { error: deleteError } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', userId);
+            
+            if (deleteError) {
+                showToast('❌ ' + t('error') + ': ' + deleteError.message, 'error');
+            } else {
+                showToast('✅ ' + t('employee_deleted'), 'success');
+                document.getElementById('customModal').style.display = 'none';
+                await loadEmployeeList();
+                await loadAllBalances();
+            }
         }
     }
-}
 };
-
 // 关闭编辑员工弹窗
 window.closeEditEmployeeModal = function() {
     document.getElementById('editEmployeeModal').style.display = 'none';
@@ -1857,301 +1888,331 @@ window.changeMonth = async function(delta) {
     currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
     await loadTeamCalendar();
 };
-
+// ============================================================================
+// 团队日历 - 完整优化版本
+// ============================================================================
+// ============================================================================
+// 团队日历 - 完整优化版本
+// ============================================================================
 async function loadTeamCalendar() {
-    const year = currentCalendarDate.getFullYear();
-    const month = currentCalendarDate.getMonth();
+    // 防止重复调用
+    if (isCalendarLoading) return;
+    isCalendarLoading = true;
     
-    document.getElementById('currentMonthDisplay').textContent = currentCalendarDate.toLocaleDateString(
-        currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'fr' ? 'fr-FR' : 'en-US',
-        { month: 'long', year: 'numeric' }
-    );
-    
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    // 修复：重命名变量避免重复声明
-    let { data: usersList } = await supabase.from('users').select('id, username, user_type').order('username');
-    
-    // 非管理员只能看到自己
-    if (!isManager) {
-        usersList = usersList?.filter(u => u.id === currentUserId) || [];
-    }
-    
-    const { data: fixedHolidays } = await supabase.from('holidays').select('month_day');
-    
-    const start = year + '-' + String(month + 1).padStart(2, '0') + '-01';
-    const end = year + '-' + String(month + 1).padStart(2, '0') + '-' + daysInMonth;
-    
-    const [attendanceRecords, leaveRequests, overrides] = await Promise.all([
-        supabase.from('attendance_records').select('*').gte('record_date', start).lte('record_date', end),
-        supabase.from('leave_details').select('*').eq('status', 'approuve'),
-        supabase.from('attendance_overrides').select('*').gte('override_date', start).lte('override_date', end)
-    ]);
-    
-    const attendanceData = attendanceRecords.data || [];
-    const leaveData = leaveRequests.data || [];
-    const overrideData = overrides.data || [];
-    
-    // 构建请假 Map
-    const leaveMap = new Map();
-    for (const leave of leaveData) {
-        const leaveStart = new Date(leave.start_date);
-        const leaveEnd = new Date(leave.end_date);
-        for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
-            const dateStr = d.toISOString().split('T')[0];
-            leaveMap.set(`${leave.user_id}_${dateStr}`, leave);
+    try {
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+        
+        document.getElementById('currentMonthDisplay').textContent = currentCalendarDate.toLocaleDateString(
+            currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'fr' ? 'fr-FR' : 'en-US',
+            { month: 'long', year: 'numeric' }
+        );
+        
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        let { data: usersList } = await supabase.from('users').select('id, username, user_type').order('username');
+        
+        if (!isManager) {
+            usersList = usersList?.filter(u => u.id === currentUserId) || [];
         }
-    }
-    
-    // 构建打卡 Map
-    const attendanceMap = new Map();
-    for (const r of attendanceData) {
-        const key = `${r.user_id}_${r.record_date}`;
-        if (!attendanceMap.has(key)) attendanceMap.set(key, []);
-        attendanceMap.get(key).push(r);
-    }
-    
-    // 构建覆盖 Map
-    const overrideMap = new Map();
-    for (const r of overrideData) {
-        overrideMap.set(`${r.user_id}_${r.override_date}`, r);
-    }
-    
-    // 计算移动节假日
-    function getEasterDate(y) {
-        const a = y % 19;
-        const b = Math.floor(y / 100);
-        const c = y % 100;
-        const d = Math.floor(b / 4);
-        const e = b % 4;
-        const f = Math.floor((b + 8) / 25);
-        const g = Math.floor((b - f + 1) / 3);
-        const h = (19 * a + b - d - g + 15) % 30;
-        const i = Math.floor(c / 4);
-        const k = c % 4;
-        const l = (32 + 2 * e + 2 * i - h - k) % 7;
-        const m = Math.floor((a + 11 * h + 22 * l) / 451);
-        const monthNum = Math.floor((h + l - 7 * m + 114) / 31);
-        const dayNum = ((h + l - 7 * m + 114) % 31) + 1;
-        return new Date(y, monthNum - 1, dayNum);
-    }
-    
-    const easter = getEasterDate(year);
-    const movableHolidays = [
-        new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1),
-        new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 39),
-        new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 50)
-    ];
-    
-    function isMovableHoliday(day, month, year) {
-        return movableHolidays.some(d => d.getFullYear() === year && d.getMonth() === month && d.getDate() === day);
-    }
-    
-    // 生成表头
-    let headers = '<th style="position:sticky; left:0; background:#2f6d9e; z-index:11;">' + 
-        (currentLanguage === 'zh' ? '员工' : currentLanguage === 'fr' ? 'Employé' : 'Employee') + '</th>';
-    
-    for (let d = 1; d <= daysInMonth; d++) {
-        const date = new Date(year, month, d);
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        headers += '<th' + (isWeekend ? ' style="background:#4a6f8f;"' : '') + ' data-day="' + d + '">' +
-            '<span class="day-number">' + d + '</span>' +
-            '<span class="day-week">' + date.toLocaleDateString(
-                currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'fr' ? 'fr-FR' : 'en-US',
-                { weekday: 'short' }
-            ) + '</span>' +
-        '</th>';
-    }
-    document.getElementById('calendarHeader').innerHTML = '<tr>' + headers + '</tr>';
-    
-    // 生成表格内容
-    const tbody = document.getElementById('calendarBody');
-    tbody.innerHTML = '';
-    
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const currentDay = today.getDate();
-    
-    // 辅助函数：获取时间或"未打卡"
-    function getTimeOrNull(record) {
-        return record ? new Date(record.action_time).toLocaleTimeString() : t('no_data');
-    }
-    
-    // 状态图标映射
-    const statusIconMap = {
-        'present': '✓',
-        'absent': '✗',
-        'mission': '🚚',
-        'sick': '🤒',
-        'halfday': '½'
-    };
-    
-    const statusClassMap = {
-        'present': 'status-working',
-        'absent': 'status-absent',
-        'mission': 'status-mission',
-        'sick': 'status-sick',
-        'halfday': 'status-halfday'
-    };
-    
-    // 使用 usersList 而不是 users
-    for (const user of usersList) {
-        let rowHtml = '<td style="position:sticky; left:0; background:#e8f0fe; z-index:10;">' +
-            '<span class="user-name">' + escapeHtml(user.username) + '</span>' +
-        '</table>';
+        
+        const { data: fixedHolidays } = await supabase.from('holidays').select('month_day');
+        
+        const start = year + '-' + String(month + 1).padStart(2, '0') + '-01';
+        const end = year + '-' + String(month + 1).padStart(2, '0') + '-' + daysInMonth;
+        
+        // 并行查询优化
+        const [attendanceRecords, leaveRequests, overrides, usersMap] = await Promise.all([
+            supabase.from('attendance_records').select('*').gte('record_date', start).lte('record_date', end),
+            supabase.from('leave_details').select('*').eq('status', 'approuve'),
+            supabase.from('attendance_overrides').select('*').gte('override_date', start).lte('override_date', end),
+            supabase.from('users').select('id, username')
+        ]);
+        
+        // 构建用户映射表（用于显示修改人姓名）
+        const userMap = new Map();
+        if (usersMap.data) {
+            usersMap.data.forEach(u => userMap.set(u.id, u.username));
+        }
+        
+        const attendanceData = attendanceRecords.data || [];
+        const leaveData = leaveRequests.data || [];
+        const overrideData = overrides.data || [];
+        
+        // 构建映射
+        const leaveMap = new Map();
+        for (const leave of leaveData) {
+            const leaveStart = new Date(leave.start_date);
+            const leaveEnd = new Date(leave.end_date);
+            for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                leaveMap.set(`${leave.user_id}_${dateStr}`, leave);
+            }
+        }
+        
+        // 构建打卡映射，同时保存 created_by 信息
+        const attendanceMap = new Map();
+        for (const r of attendanceData) {
+            const key = `${r.user_id}_${r.record_date}`;
+            if (!attendanceMap.has(key)) attendanceMap.set(key, []);
+            attendanceMap.get(key).push({
+                action_type: r.action_type,
+                action_time: r.action_time,
+                work_hours: r.work_hours,
+                created_by: r.created_by
+            });
+        }
+        
+        const overrideMap = new Map();
+        for (const r of overrideData) {
+            overrideMap.set(`${r.user_id}_${r.override_date}`, r);
+        }
+        
+        // 计算移动假日
+        function getEasterDate(y) {
+            const a = y % 19;
+            const b = Math.floor(y / 100);
+            const c = y % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const monthNum = Math.floor((h + l - 7 * m + 114) / 31);
+            const dayNum = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(y, monthNum - 1, dayNum);
+        }
+        
+        const easter = getEasterDate(year);
+        const movableHolidays = [
+            new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1),
+            new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 39),
+            new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 50)
+        ];
+        
+        function isMovableHoliday(day, month, year) {
+            return movableHolidays.some(d => d.getFullYear() === year && d.getMonth() === month && d.getDate() === day);
+        }
+        
+        // 生成表头
+        let headers = '<th style="position:sticky; left:0; background:#2f6d9e; z-index:11;">' + 
+            (currentLanguage === 'zh' ? '员工' : currentLanguage === 'fr' ? 'Employé' : 'Employee') + '</th>';
         
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
             const date = new Date(year, month, d);
-            const md = String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            const isFixedHoliday = fixedHolidays?.some(h => h.month_day === md);
-            const isMovable = isMovableHoliday(d, month, year);
-            const isHoliday = isFixedHoliday || isMovable;
-            
-            // 优先级1: 手动覆盖（管理员修改）
-            const override = overrideMap.get(`${user.id}_${dateStr}`);
-            if (override) {
-                const statusText = statusIconMap[override.override_status] || '?';
-                const statusClass = statusClassMap[override.override_status] || 'status-absent';
-                
-                let setByName = '系统';
-                if (override.set_by) {
-                    const { data: adminUser } = await supabase
-                        .from('users')
-                        .select('username')
-                        .eq('id', override.set_by)
-                        .single();
-                    if (adminUser) setByName = adminUser.username;
-                }
-                
-                let overrideTooltip = [];
-                overrideTooltip.push(`📅 ${dateStr}`);
-                overrideTooltip.push(`👤 ${user.username}`);
-                overrideTooltip.push(`🔧 ${t('edit')}: ${override.override_status}`);
-                overrideTooltip.push(`👨‍💼 ${t('admin')}: ${setByName}`);
-                overrideTooltip.push(`⏱️ ${t('time')}: ${new Date(override.set_at).toLocaleString()}`);
-                
-                rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\')" title="' + escapeHtml(overrideTooltip.join('\n')) + '">' +
-                    '<span class="' + statusClass + '">' + statusText + '</span>' +
-                '<\/td>';
-                continue;
-            }
-            
-            // 优先级2: 请假
-            const leave = leaveMap.get(`${user.id}_${dateStr}`);
-            if (leave) {
-                let leaveTooltip = [];
-                leaveTooltip.push(`📅 ${dateStr}`);
-                leaveTooltip.push(`👤 ${user.username}`);
-                leaveTooltip.push(`🏖️ ${t('legend_leave')}: ${leave.leave_type_name || 'Congé'}`);
-                
-                rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\')" title="' + escapeHtml(leaveTooltip.join('\n')) + '">' +
-                    '<span class="status-leave">🏖️</span>' +
-                '<\/td>';
-                continue;
-            }
-            
-            // 优先级3: 节假日
-            if (isHoliday) {
-                let holidayTooltip = [];
-                holidayTooltip.push(`📅 ${dateStr}`);
-                holidayTooltip.push(`👤 ${user.username}`);
-                holidayTooltip.push(`📅 ${t('legend_holiday')}`);
-                
-                rowHtml += '<td class="status-cell" title="' + escapeHtml(holidayTooltip.join('\n')) + '">' +
-                    '<span class="status-holiday">🏖️</span>' +
-                '<\/td>';
-                continue;
-            }
-            
-            // 优先级4: 周末
-            if (isWeekend) {
-                let weekendTooltip = [];
-                weekendTooltip.push(`📅 ${dateStr}`);
-                weekendTooltip.push(`👤 ${user.username}`);
-                weekendTooltip.push(`🌙 ${t('legend_weekend')}`);
-                
-                rowHtml += '<td class="status-cell" title="' + escapeHtml(weekendTooltip.join('\n')) + '">' +
-                    '<span class="status-weekend">🌙</span>' +
-                '<\/td>';
-                continue;
-            }
-            
-            // 优先级5: 打卡记录
-            const records = attendanceMap.get(`${user.id}_${dateStr}`) || [];
-            const checkInRecord = records.find(r => r.action_type === 'check_in');
-            const checkOutRecord = records.find(r => r.action_type === 'check_out');
-            const breakStartRecord = records.find(r => r.action_type === 'break_start');
-            const breakEndRecord = records.find(r => r.action_type === 'break_end');
-            
-            let tooltipLines = [];
-            tooltipLines.push(`📅 ${dateStr}`);
-            tooltipLines.push(`👤 ${user.username}`);
-            tooltipLines.push(`✅ ${t('check_in')}: ${getTimeOrNull(checkInRecord)}`);
-            tooltipLines.push(`☕ ${t('break_start')}: ${getTimeOrNull(breakStartRecord)}`);
-            tooltipLines.push(`💪 ${t('break_end')}: ${getTimeOrNull(breakEndRecord)}`);
-            tooltipLines.push(`🏠 ${t('check_out')}: ${getTimeOrNull(checkOutRecord)}`);
-            
-            if (checkOutRecord && checkOutRecord.work_hours !== null) {
-                tooltipLines.push(`⏱️ ${t('work_hours')}: ${checkOutRecord.work_hours}h`);
-                if (checkOutRecord.work_hours < 8) {
-                    tooltipLines.push(`⚠️ ${t('work_hours_insufficient')}`);
-                } else {
-                    tooltipLines.push(`✅ ${t('present')}`);
-                }
-            } else if (checkInRecord && !checkOutRecord) {
-                tooltipLines.push(`⚠️ ${t('missing_checkout')}`);
-            }
-            
-            if (checkInRecord) {
-                if (checkOutRecord && checkOutRecord.work_hours >= 8) {
-                    rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\')" title="' + escapeHtml(tooltipLines.join('\n')) + '">' +
-                        '<span class="status-working">✓</span>' +
-                    '<\/td>';
-                } else {
-                    rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\')" title="' + escapeHtml(tooltipLines.join('\n')) + '">' +
-                        '<span class="status-mission">⚠️</span>' +
-                    '<\/td>';
-                }
-                continue;
-            }
-            
-            // 优先级6: 缺勤
-            let tooltipLinesEmpty = [];
-            tooltipLinesEmpty.push(`📅 ${dateStr}`);
-            tooltipLinesEmpty.push(`👤 ${user.username}`);
-            tooltipLinesEmpty.push(`✅ ${t('check_in')}: ${t('no_data')}`);
-            tooltipLinesEmpty.push(`☕ ${t('break_start')}: ${t('no_data')}`);
-            tooltipLinesEmpty.push(`💪 ${t('break_end')}: ${t('no_data')}`);
-            tooltipLinesEmpty.push(`🏠 ${t('check_out')}: ${t('no_data')}`);
-            tooltipLinesEmpty.push(`❌ ${t('absent')}`);
-            
-            rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\')" title="' + escapeHtml(tooltipLinesEmpty.join('\n')) + '">' +
-                '<span class="status-absent">✗</span>' +
-            '<\/td>';
+            headers += '<th' + (isWeekend ? ' style="background:#4a6f8f;"' : '') + ' data-day="' + d + '">' +
+                '<span class="day-number">' + d + '</span>' +
+                '<span class="day-week">' + date.toLocaleDateString(
+                    currentLanguage === 'zh' ? 'zh-CN' : currentLanguage === 'fr' ? 'fr-FR' : 'en-US',
+                    { weekday: 'short' }
+                ) + '</span>' +
+            '</th>';
         }
-        tbody.innerHTML += '<tr>' + rowHtml + '</tr>';
+        document.getElementById('calendarHeader').innerHTML = '<table>' + headers + '</tr>';
+        
+        const tbody = document.getElementById('calendarBody');
+        tbody.innerHTML = '';
+        
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        const currentDay = today.getDate();
+        
+        function getTimeOrNull(record) {
+            return record ? new Date(record.action_time).toLocaleTimeString() : t('no_data');
+        }
+        
+        // 构建表格行
+        for (const user of usersList) {
+            let rowHtml = '<td style="position:sticky; left:0; background:#e8f0fe; z-index:10;">' +
+                '<span class="user-name">' + escapeHtml(user.username) + '</span>' +
+            '</table>';
+            
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                const date = new Date(year, month, d);
+                const md = String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isFixedHoliday = fixedHolidays?.some(h => h.month_day === md);
+                const isMovable = isMovableHoliday(d, month, year);
+                const isHoliday = isFixedHoliday || isMovable;
+                
+                const override = overrideMap.get(`${user.id}_${dateStr}`);
+                if (override) {
+                    let statusText = '';
+                    let statusClass = '';
+                    let statusLabel = '';
+                    if (override.override_status === 'present') { statusText = '✓'; statusClass = 'status-working'; statusLabel = t('present'); }
+                    else if (override.override_status === 'absent') { statusText = '✗'; statusClass = 'status-absent'; statusLabel = t('absent'); }
+                    else if (override.override_status === 'mission') { statusText = '🚚'; statusClass = 'status-mission'; statusLabel = t('mission'); }
+                    else if (override.override_status === 'sick') { statusText = '🤒'; statusClass = 'status-sick'; statusLabel = t('sick'); }
+                    else if (override.override_status === 'halfday') { statusText = '½'; statusClass = 'status-halfday'; statusLabel = t('halfday'); }
+                    else { statusText = '?'; statusClass = 'status-absent'; statusLabel = t('unknown'); }
+                    
+                    const setByName = userMap.get(override.set_by) || t('unknown');
+                    const setTime = new Date(override.set_at).toLocaleString();
+                    
+                    const overrideTooltip = [
+                        `📅 ${dateStr}`,
+                        `👤 ${user.username}`,
+                        `✏️ ${t('edit')}: ${statusLabel}`,
+                        `👨‍💼 ${t('admin')}: ${setByName}`,
+                        `⏱️ ${t('time')}: ${setTime}`
+                    ];
+                    
+                    rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(overrideTooltip.join('\n')) + '">' +
+                        '<span class="' + statusClass + '">' + statusText + '</span>' +
+                    '</td>';
+                    continue;
+                }
+                
+                const leave = leaveMap.get(`${user.id}_${dateStr}`);
+                if (leave) {
+                    let leaveIcon = '🏖️';
+                    let leaveClass = 'status-leave';
+                    const leaveTypeName = leave.leave_type_name || '';
+                    
+                    if (leaveTypeName === 'Congés payés') { leaveIcon = '🏖️'; leaveClass = 'status-leave-cp'; }
+                    else if (leaveTypeName === 'Maladie') { leaveIcon = '🤒'; leaveClass = 'status-leave-sick'; }
+                    else if (leaveTypeName === 'Congé maternité' || leaveTypeName === 'Congé paternité') { leaveIcon = '👶'; leaveClass = 'status-leave-family'; }
+                    else if (leaveTypeName === 'Congé sans solde') { leaveIcon = '💰'; leaveClass = 'status-leave-unpaid'; }
+                    else if (leaveTypeName === 'École') { leaveIcon = '📚'; leaveClass = 'status-leave-school'; }
+                    else if (leaveTypeName === 'Congés mariage') { leaveIcon = '💍'; leaveClass = 'status-leave-family'; }
+                    else if (leaveTypeName === 'Congés décès') { leaveIcon = '🕊️'; leaveClass = 'status-leave-family'; }
+                    else if (leaveTypeName === 'Événements familiaux') { leaveIcon = '🏠'; leaveClass = 'status-leave-family'; }
+                    
+                    const leaveTooltip = [
+                        `📅 ${dateStr}`,
+                        `👤 ${user.username}`,
+                        `📋 ${t('leave_type')}: ${leaveTypeName}`,
+                        `📅 ${new Date(leave.start_date).toLocaleDateString()} - ${new Date(leave.end_date).toLocaleDateString()}`
+                    ];
+                    
+                    if (leave.approver_name) {
+                        leaveTooltip.push(`✅ ${t('approved_by')}: ${leave.approver_name}`);
+                        if (leave.approved_at) {
+                            leaveTooltip.push(`⏱️ ${t('time')}: ${new Date(leave.approved_at).toLocaleString()}`);
+                        }
+                    }
+                    
+                    rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(leaveTooltip.join('\n')) + '">' +
+                        '<span class="' + leaveClass + '">' + leaveIcon + '</span>' +
+                    '</tr>';
+                    continue;
+                }
+                
+                if (isHoliday) {
+                    const holidayTooltip = [
+                        `📅 ${dateStr}`,
+                        `👤 ${user.username}`,
+                        `🎉 ${t('legend_holiday')}`
+                    ];
+                    rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(holidayTooltip.join('\n')) + '">' +
+                        '<span class="status-holiday">🎉</span>' +
+                    '</td>';
+                    continue;
+                }
+                
+                if (isWeekend) {
+                    const weekendTooltip = [
+                        `📅 ${dateStr}`,
+                        `👤 ${user.username}`,
+                        `🌙 ${t('legend_weekend')}`
+                    ];
+                    rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(weekendTooltip.join('\n')) + '">' +
+                        '<span class="status-weekend">🌙</span>' +
+                    '</td>';
+                    continue;
+                }
+                
+                const records = attendanceMap.get(`${user.id}_${dateStr}`) || [];
+                const checkInRecord = records.find(r => r.action_type === 'check_in');
+                const checkOutRecord = records.find(r => r.action_type === 'check_out');
+                const breakStartRecord = records.find(r => r.action_type === 'break_start');
+                const breakEndRecord = records.find(r => r.action_type === 'break_end');
+                
+                const tooltipLines = [
+                    `📅 ${dateStr}`,
+                    `👤 ${user.username}`,
+                    `${t('check_in')}: ${getTimeOrNull(checkInRecord)}`,
+                    `${t('break_start')}: ${getTimeOrNull(breakStartRecord)}`,
+                    `${t('break_end')}: ${getTimeOrNull(breakEndRecord)}`,
+                    `${t('check_out')}: ${getTimeOrNull(checkOutRecord)}`
+                ];
+                
+                // 如果是管理员补录的下班记录，显示操作人
+                if (checkOutRecord && checkOutRecord.created_by && checkOutRecord.created_by !== user.id) {
+                    const operatorName = userMap.get(checkOutRecord.created_by) || t('unknown');
+                    tooltipLines.push(`👨‍💼 ${t('admin')}: ${operatorName}`);
+                }
+                
+                if (checkOutRecord && checkOutRecord.work_hours !== null) {
+                    tooltipLines.push(`⏱️ ${t('work_hours')}: ${checkOutRecord.work_hours}h`);
+                    if (checkOutRecord.work_hours < 8) {
+                        tooltipLines.push(`⚠️ ${t('work_hours_insufficient')}`);
+                    } else {
+                        tooltipLines.push(`✅ ${t('present')}`);
+                    }
+                } else if (checkInRecord && !checkOutRecord) {
+                    tooltipLines.push(`⚠️ ${t('missing_checkout')}`);
+                }
+                
+                if (checkInRecord) {
+                    if (checkOutRecord && checkOutRecord.work_hours >= 8) {
+                        rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(tooltipLines.join('\n')) + '">' +
+                            '<span class="status-working">✓</span>' +
+                        '</td>';
+                    } else {
+                        rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(tooltipLines.join('\n')) + '">' +
+                            '<span class="status-mission">⚠️</span>' +
+                        '</tr>';
+                    }
+                    continue;
+                }
+                
+                const absentTooltip = [
+                    `📅 ${dateStr}`,
+                    `👤 ${user.username}`,
+                    `❌ ${t('absent')}`
+                ];
+                rowHtml += '<td class="status-cell" onclick="quickEditAttendance(' + user.id + ', \'' + dateStr + '\', ' + isWeekend + ', ' + isHoliday + ')" title="' + escapeHtml(absentTooltip.join('\n')) + '">' +
+                    '<span class="status-absent">✗</span>' +
+                '<tr>';
+            }
+            
+            rowHtml += '</tr>';
+            const tr = document.createElement('tr');
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
+        }
+        
+        setTimeout(function() {
+            if (year === currentYear && month === currentMonth) {
+                const targetCell = document.querySelector('#calendarBody td.status-cell:nth-child(' + (currentDay + 1) + ')');
+                if (targetCell) {
+                    targetCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }
+        }, 150);
+        
+    } catch (error) {
+        console.error('加载日历失败:', error);
+    } finally {
+        isCalendarLoading = false;
     }
-    
-    // 滚动到当天
-    setTimeout(function() {
-        if (year === currentYear && month === currentMonth) {
-            const targetCell = document.querySelector('#calendarBody td.status-cell:nth-child(' + (currentDay + 1) + ')');
-            if (targetCell) {
-                targetCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-        }
-    }, 150);
 }
-
-
 // ============================================================================
-// 统一编辑入口 - 点击日历格子
+// 统一编辑入口 - 支持周末/节假日限制
 // ============================================================================
-window.quickEditAttendance = async function(userId, dateStr) {
+window.quickEditAttendance = async function(userId, dateStr, isWeekend, isHoliday) {
     if (!canEditAttendance) return;
+    
+    const isRestDay = isWeekend || isHoliday;
     
     // 获取当天信息
     const { data: checkIn } = await supabase
@@ -2162,9 +2223,9 @@ window.quickEditAttendance = async function(userId, dateStr) {
         .eq('action_type', 'check_in')
         .maybeSingle();
     
-    const { data: checkOut } = await supabase
+    let { data: checkOut } = await supabase
         .from('attendance_records')
-        .select('action_time, work_hours')
+        .select('action_time, work_hours, created_by, id')
         .eq('user_id', userId)
         .eq('record_date', dateStr)
         .eq('action_type', 'check_out')
@@ -2179,53 +2240,107 @@ window.quickEditAttendance = async function(userId, dateStr) {
     
     const { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
     
-    // 构建信息
-    let currentInfo = `👤 ${user?.username}\n📅 ${dateStr}\n`;
-    if (checkIn) currentInfo += `⏰ 上班: ${new Date(checkIn.action_time).toLocaleTimeString()}\n`;
-    else currentInfo += `⏰ 上班: 未打卡\n`;
-    if (checkOut) currentInfo += `🏠 下班: ${new Date(checkOut.action_time).toLocaleTimeString()}\n⏱️ 工时: ${checkOut.work_hours}h\n`;
-    else currentInfo += `🏠 下班: 未打卡\n`;
+    // 构建美观的弹窗内容
+    let currentInfo = `
+        <div style="font-size: 14px; line-height: 1.8;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e0e0e0;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">
+                    ${user?.username?.charAt(0).toUpperCase() || '?'}
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 16px;">${escapeHtml(user?.username || '')}</div>
+                    <div style="color: #888; font-size: 12px;">${dateStr}</div>
+                </div>
+            </div>
+            <div style="background: #f5f5f5; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #666;">📅 ${t('check_in')}</span>
+                    <span style="font-weight: 500;">${checkIn ? new Date(checkIn.action_time).toLocaleTimeString() : t('no_data')}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #666;">🏠 ${t('check_out')}</span>
+                    <span style="font-weight: 500;">${checkOut ? new Date(checkOut.action_time).toLocaleTimeString() : t('no_data')}</span>
+                </div>
+                ${checkOut ? `<div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd;">
+                    <span style="color: #666;">⏱️ ${t('work_hours')}</span>
+                    <span style="font-weight: 500; ${checkOut.work_hours < 8 ? 'color: #e67e22;' : 'color: #27ae60;'}">${checkOut.work_hours}h</span>
+                </div>` : ''}
+            </div>
+    `;
+    
+    // 添加当天类型标识
+    if (isRestDay) {
+        const dayType = isHoliday ? '🎉 ' + t('legend_holiday') : '🌙 ' + t('legend_weekend');
+        currentInfo += `<div style="background: #e8f0fe; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px;">
+            📌 ${dayType}
+        </div>`;
+    }
     
     // 判断异常
-    let hasAnomaly = false;
-    let anomalyText = '';
-    if (!checkOut && checkIn) {
-        hasAnomaly = true;
-        anomalyText = t('missing_checkout');
-    } else if (checkOut && checkOut.work_hours < 8) {
-        hasAnomaly = true;
-        anomalyText = `${t('work_hours_insufficient')} (${checkOut.work_hours}h)`;
+    let missingCheckout = false;
+    if (!isRestDay) {
+        if (!checkOut && checkIn) {
+            missingCheckout = true;
+            currentInfo += `<div style="background: #fee2e2; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; color: #e74c3c; font-size: 13px;">
+                ⚠️ ${t('missing_checkout')}
+            </div>`;
+        } else if (checkOut && checkOut.work_hours < 8) {
+            currentInfo += `<div style="background: #fff3e0; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; color: #e67e22; font-size: 13px;">
+                ⚠️ ${t('work_hours_insufficient')} (${checkOut.work_hours}h)
+            </div>`;
+        }
     }
     
-    if (hasAnomaly && !existingOverride) currentInfo += `\n⚠️ 异常: ${anomalyText}`;
     if (existingOverride) {
-        const statusMap = { present: '✅ 正常出勤', absent: '❌ 缺勤', mission: '🚚 外勤', sick: '🤒 病假', halfday: '⏸️ 半天' };
-        currentInfo += `\n📌 当前状态: ${statusMap[existingOverride.override_status] || existingOverride.override_status}`;
+        const statusMap = { 
+            present: '✅ ' + t('present'), 
+            absent: '❌ ' + t('absent'), 
+            mission: '🚚 ' + t('mission'), 
+            sick: '🤒 ' + t('sick'), 
+            halfday: '⏸️ ' + t('halfday') 
+        };
+        currentInfo += `<div style="background: #e8f5e9; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px;">
+            📌 ${t('current_status')}: ${statusMap[existingOverride.override_status] || existingOverride.override_status}
+        </div>`;
     }
+    
+    currentInfo += `</div>`;
     
     // 状态选项
-    const statusOptions = [
-        { value: 'present', label: '✅ 正常出勤' },
-        { value: 'absent', label: '❌ 缺勤' },
-        { value: 'mission', label: '🚚 外勤' },
-        { value: 'sick', label: '🤒 病假' },
-        { value: 'halfday', label: '⏸️ 半天' },
-        { value: 'default', label: '🔄 恢复默认' }
-    ];
+    let statusOptions = [];
     
-    if (hasAnomaly && !existingOverride && checkIn) {
-        statusOptions.unshift({ value: 'fix', label: '🔧 处理异常（补录下班时间）' });
+    if (isRestDay) {
+        statusOptions = [
+            { value: 'present', label: '✅ ' + t('present') + ' (加班)' },
+            { value: 'mission', label: '🚚 ' + t('mission') },
+            { value: 'halfday', label: '⏸️ ' + t('halfday') },
+            { value: 'default', label: '🔄 ' + t('restored_default') }
+        ];
+    } else {
+        statusOptions = [
+            { value: 'present', label: '✅ ' + t('present') },
+            { value: 'absent', label: '❌ ' + t('absent') },
+            { value: 'mission', label: '🚚 ' + t('mission') },
+            { value: 'sick', label: '🤒 ' + t('sick') },
+            { value: 'halfday', label: '⏸️ ' + t('halfday') },
+            { value: 'default', label: '🔄 ' + t('restored_default') }
+        ];
+        
+        // 只在缺少下班打卡时显示补录选项
+        if (missingCheckout && !existingOverride) {
+            statusOptions.unshift({ value: 'fix', label: '🔧 ' + t('fix_abnormal') });
+        }
     }
     
     const result = await showModal({
         icon: 'info',
-        title: t('edit_attendance') || '编辑出勤',
-         isHtml: true,  // 添加这一行
+        title: '✏️ ' + (t('edit_attendance') || '编辑出勤'),
+        isHtml: true,
         message: currentInfo,
         select: { options: statusOptions },
         buttons: [
-            { text: t('save'), type: 'primary', value: 'save' },
-            { text: t('cancel'), type: 'cancel', value: 'cancel' }
+            { text: '💾 ' + t('save'), type: 'primary', value: 'save' },
+            { text: '❌ ' + t('cancel'), type: 'cancel', value: 'cancel' }
         ]
     });
     
@@ -2233,6 +2348,12 @@ window.quickEditAttendance = async function(userId, dateStr) {
     
     // 处理异常（补录下班时间）
     if (result.selectValue === 'fix') {
+        if (!checkIn) {
+            showToast(t('no_check_in_found'), 'error');
+            await loadTeamCalendar();
+            return;
+        }
+        
         const timeOptions = [];
         for (let hour = 16; hour <= 20; hour++) {
             for (let minute of [0, 15, 30, 45]) {
@@ -2242,20 +2363,27 @@ window.quickEditAttendance = async function(userId, dateStr) {
                 const checkInTime = new Date(checkIn.action_time);
                 let workHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
                 workHours = Math.max(0, Math.round(workHours * 10) / 10);
-                timeOptions.push({ value: timeStr, label: `${timeStr} (${t('work_hours')}: ${workHours}h)` });
+                const label = workHours >= 8 ? `✅ ${timeStr} (${workHours}h)` : `⚠️ ${timeStr} (${workHours}h)`;
+                timeOptions.push({ value: timeStr, label: label });
             }
         }
         
         const timeResult = await showModal({
             icon: 'info',
-            title: t('record_checkout_time') || '补录下班时间',
-            message: `${t('check_in_time')}: ${new Date(checkIn.action_time).toLocaleTimeString()}`,
+            title: '🔧 ' + (t('record_checkout_time') || '补录下班时间'),
+            isHtml: true,  // 添加这一行！
+            message: `<div style="padding: 8px; background: #f0f4ff; border-radius: 8px;">
+                <strong>${t('check_in_time')}:</strong> ${new Date(checkIn.action_time).toLocaleTimeString()}
+            </div>`,
             select: { options: timeOptions },
-            buttons: [{ text: t('confirm'), type: 'primary', value: 'confirm' }, { text: t('cancel'), type: 'cancel', value: 'cancel' }]
+            buttons: [
+                { text: '✅ ' + t('confirm'), type: 'primary', value: 'confirm' },
+                { text: '❌ ' + t('cancel'), type: 'cancel', value: 'cancel' }
+            ]
         });
         
         if (timeResult.button === 'cancel' || !timeResult.selectValue) {
-            showToast(t('cancelled') || '已取消', 'info');
+            showToast(t('cancelled'), 'info');
             await loadTeamCalendar();
             return;
         }
@@ -2265,9 +2393,9 @@ window.quickEditAttendance = async function(userId, dateStr) {
         let workHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
         workHours = Math.max(0, Math.round(workHours * 10) / 10);
         
-        // 补录下班时间时，记录操作人
-        await supabase.from('attendance_records').insert({
+        const { error: insertError } = await supabase.from('attendance_records').insert({
             user_id: userId, 
+            username: user?.username,
             record_date: dateStr, 
             action_type: 'check_out',
             action_time: checkOutTime.toISOString(), 
@@ -2275,9 +2403,15 @@ window.quickEditAttendance = async function(userId, dateStr) {
             need_review: false, 
             status: 'normal', 
             is_valid: true,
-            created_by: currentUserId  // 新增
-        });
-        showToast(`${t('checkout_recorded')} ${timeResult.selectValue}`, 'success');
+            created_by: currentUserId
+        }).select();  // 添加 select() 返回插入的记录
+        
+        if (insertError) {
+            showToast('❌ 插入失败: ' + insertError.message, 'error');
+        } else {
+            showToast(`✅ ${t('checkout_recorded')} ${timeResult.selectValue} (${workHours}h)`, 'success');
+        }
+        
         await loadTeamCalendar();
         await updateTabBadges();
         return;
@@ -2285,20 +2419,60 @@ window.quickEditAttendance = async function(userId, dateStr) {
     
     // 恢复默认
     if (result.selectValue === 'default') {
+        // 1. 删除覆盖记录
         await supabase.from('attendance_overrides').delete().eq('user_id', userId).eq('override_date', dateStr);
-        showToast(t('restored_default') || '已恢复默认状态', 'success');
-    } else {
-        // 手动设置状态
-        await supabase.from('attendance_overrides').upsert({
-            user_id: userId, override_date: dateStr, override_status: result.selectValue,
-            set_by: currentUserId, reason: 'manual_edit', set_at: new Date()
-        }, { onConflict: 'user_id, override_date' });
-        showToast(t('saved') || '已保存', 'success');
+        
+        // 2. 重新查询当天的下班记录（确保获取最新数据）
+        const { data: latestCheckout } = await supabase
+            .from('attendance_records')
+            .select('id, created_by')
+            .eq('user_id', userId)
+            .eq('record_date', dateStr)
+            .eq('action_type', 'check_out')
+            .maybeSingle();
+        
+        // 删除管理员补录的下班记录（created_by 不等于用户自己且不为空）
+        let deleted = false;
+        if (latestCheckout && latestCheckout.created_by && latestCheckout.created_by !== userId) {
+            const { error: deleteError } = await supabase
+                .from('attendance_records')
+                .delete()
+                .eq('id', latestCheckout.id);
+            
+            if (!deleteError) {
+                deleted = true;
+            }
+        }
+        
+        if (deleted) {
+            showToast(`🔄 ${t('restored_default')}，已删除补录的下班记录`, 'success');
+        } else {
+            showToast(`🔄 ${t('restored_default')}`, 'success');
+        }
+        
+        await loadTeamCalendar();
+        await updateTabBadges();
+        return;
     }
     
+    // 手动设置状态
+    await supabase.from('attendance_overrides').upsert({
+        user_id: userId, 
+        override_date: dateStr, 
+        override_status: result.selectValue,
+        set_by: currentUserId, 
+        reason: 'manual_edit', 
+        set_at: new Date()
+    }, { onConflict: 'user_id, override_date' });
+    
+    showToast(`✅ ${t('saved')}`, 'success');
     await loadTeamCalendar();
     await updateTabBadges();
 };
+
+// ============================================================================
+// 汉堡菜单控制
+// ============================================================================
 
 // ============================================================================
 // 待批请假（管理员）
@@ -2518,4 +2692,5 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     setupEventListeners();
+     
 });

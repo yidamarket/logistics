@@ -1473,7 +1473,9 @@ async function openEditModal(productId) {
 
             document.getElementById('logoutBtn').addEventListener('click', (e) => {
                 e.preventDefault();
-                window.logout();
+                // 清除会话/登录状态
+          
+                window.location.href = 'index.html';
             });
 
             document.getElementById('openAddModalBtn').addEventListener('click', openAddModal);
