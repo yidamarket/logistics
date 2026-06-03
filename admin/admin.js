@@ -1657,7 +1657,7 @@ async function savePointsConfig() {
 // ========== 分配司机 ==========
 async function loadDrivers() {
     try {
-        const { data, error } = await window.supabase.from('users').select('id, username').eq('user_type', 'chauffeur');
+        const { data, error } = await window.supabase.from('users').select('id, username').eq('user_type', 'chauffeur') .eq('active', true);
         if (error) throw error;
         drivers = data || [];
         const select = document.getElementById('driverSelect');
