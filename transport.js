@@ -78,7 +78,157 @@ let START_POINT = {
     lat: 48.7875,  // 临时值，会被覆盖
     lon: 2.3958 
 };
+// ==================== 更新地图标记（支持排序顺序） ====================
+async function updateMapWithSortedOrders(orders, sortedOrdersWithIndex) {
+    console.log('updateMapWithSortedOrders被调用');
+    
+    if (!map) {
+        console.log('地图未初始化，尝试初始化');
+        initMap();
+        return;
+    }
+    
+    const canSeeMap = isChauffeur() || hasFullAccess();
+    if (!canSeeMap) return;
 
+    // 清除所有现有标记
+    if (mapMarkers.length > 0) {
+        mapMarkers.forEach(marker => map.removeLayer(marker));
+        mapMarkers = [];
+    }
+    
+    if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+    }
+
+    // 获取相关订单
+    let relevantOrders = orders;
+    if (isChauffeur()) {
+        relevantOrders = orders.filter(o => o.driver === currentUser);
+    } else if (hasFullAccess() && selectedDriver) {
+        relevantOrders = orders.filter(o => o.driver === selectedDriver);
+    }
+
+    // 添加仓库标记
+    const depotIcon = L.divIcon({
+        html: '🏢',
+        className: 'depot-marker',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+    
+    const depotMarker = L.marker([START_POINT.lat, START_POINT.lon], { icon: depotIcon })
+        .bindPopup(`<strong>🚚 Dépôt</strong><br>${escapeHtml(START_POINT.address)}`)
+        .addTo(map);
+    mapMarkers.push(depotMarker);
+
+    // 创建排序订单的映射表（订单ID -> 路线序号）
+    const routeIndexMap = new Map();
+    if (sortedOrdersWithIndex) {
+        sortedOrdersWithIndex.forEach(item => {
+            routeIndexMap.set(item.id, item.routeIndex);
+        });
+    }
+
+    // 添加未交付订单标记（使用路线序号）
+    const remainingOrders = relevantOrders.filter(o => o.status !== ORDER_STATUS.LIVRE && o.lat && o.lon);
+    
+    remainingOrders.forEach((point) => {
+        if (!point.lat || !point.lon) return;
+        
+        // 获取路线序号，如果没有则使用原始显示方式
+        const routeNumber = routeIndexMap.get(point.id);
+        const displayNumber = routeNumber ? routeNumber : '?';
+        
+        let color = '#ff9800';
+        if (point.status === ORDER_STATUS.EN_COURS) {
+            color = '#9c27b0';
+        } else if (point.status === ORDER_STATUS.PREPARE) {
+            color = '#2196f3';
+        }
+        
+        const markerIcon = L.divIcon({
+            html: `<div style="background-color: ${color}; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${displayNumber}</div>`,
+            className: '',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        let statusText = point.status === ORDER_STATUS.EN_COURS ? '🔵 En cours' : 
+                        point.status === ORDER_STATUS.PREPARE ? '⏳ Prêt' : '';
+        
+        const timeInfo = formatTimeRequirement(point);
+        
+        const marker = L.marker([parseFloat(point.lat), parseFloat(point.lon)], { icon: markerIcon })
+            .bindPopup(`
+                <strong>${displayNumber}. ${escapeHtml(point.customer_name)}</strong><br>
+                📍 ${escapeHtml(point.destination)}<br>
+                ⏰ ${timeInfo}<br>
+                ${statusText}
+                ${point.phone ? `<br>📱 ${escapeHtml(point.phone)}` : ''}
+            `)
+            .addTo(map);
+        
+        mapMarkers.push(marker);
+    });
+
+    // 获取今日已交付订单
+    const deliveredOrders = relevantOrders.filter(o => 
+        o.status === ORDER_STATUS.LIVRE && 
+        o.date === currentDate &&
+        o.lat && o.lon
+    );
+
+    // 计算当前位置
+    let currentPosition = {
+        lat: START_POINT.lat,
+        lon: START_POINT.lon,
+        address: START_POINT.address
+    };
+    
+    if (deliveredOrders.length > 0) {
+        const lastDelivered = [...deliveredOrders].sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at))[0];
+        if (lastDelivered.lat && lastDelivered.lon) {
+            currentPosition = {
+                address: lastDelivered.destination,
+                lat: parseFloat(lastDelivered.lat),
+                lon: parseFloat(lastDelivered.lon)
+            };
+        }
+    }
+
+    // 添加当前位置标记
+    if (isChauffeur() || (hasFullAccess() && selectedDriver)) {
+        const positionIcon = L.divIcon({
+            html: '🚚',
+            className: 'custom-marker',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        const posMarker = L.marker([currentPosition.lat, currentPosition.lon], { icon: positionIcon })
+            .bindPopup(`
+                <strong>📍 Position actuelle</strong><br>
+                ${currentPosition.address === START_POINT.address ? 'Départ' : 'Dernière livraison'}<br>
+                ${escapeHtml(currentPosition.address)}
+            `)
+            .addTo(map);
+        
+        mapMarkers.push(posMarker);
+    }
+
+    // 调整地图视野
+    if (mapMarkers.length > 0) {
+        const group = L.featureGroup(mapMarkers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+// 原来的 updateMap 函数（保持兼容性）
+async function updateMap(orders) {
+    await updateMapWithSortedOrders(orders, null);
+}
 // 动态获取仓库精确坐标
 async function updateDepotCoordinates() {
     try {
@@ -1572,8 +1722,14 @@ Yida`;
                 const route = await getOSRMRoute(waypoints);
                 
                 if (route) {
-                    displayRoute(route.geometry);
-                    await updateMap(allOrders);
+                        displayRoute(route.geometry);
+                        
+                        // 用排序后的订单顺序更新地图
+                        const sortedOrdersWithIndex = sortedOrders.map((order, idx) => ({
+                            ...order,
+                            routeIndex: idx + 1
+                        }));
+                        await updateMapWithSortedOrders(allOrders, sortedOrdersWithIndex);
                     
                     const departureTime = new Date();
                     departureTime.setHours(8, 0, 0, 0);
