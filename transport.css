@@ -1,5 +1,4 @@
-
-        /* ========== 原有样式保持不变 ========== */
+        /* ========== 全局样式 - 红色系主题 ========== */
         * {
             box-sizing: border-box;
             font-family: 'Segoe UI', Roboto, sans-serif;
@@ -7,7 +6,7 @@
             padding: 0;
         }
         body {
-            background: #e9eff5;
+            background: #f0f4f8;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -38,7 +37,7 @@
             gap: 10px;
         }
         .back-home {
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             border: none;
             padding: 10px 20px;
@@ -48,14 +47,16 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: background 0.3s;
+            transition: all 0.3s;
             white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(230,57,70,0.3);
         }
         .back-home:hover {
-            background: #1d4a72;
+            background: linear-gradient(135deg, #c92a3a, #e63946);
+            transform: translateY(-1px);
         }
         .user-info-bar {
-            background: #d4e3fd;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
             border-radius: 40px;
             padding: 12px 16px;
             flex: 1;
@@ -64,15 +65,20 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 10px;
+            color: white;
         }
         .logout-btn {
-            background: #e05a5a;
+            background: #ef4444;
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
         }
         .login-overlay {
             position: fixed;
@@ -117,10 +123,14 @@
             outline: none;
             -webkit-appearance: none;
         }
+        .login-input:focus {
+            border-color: #e63946;
+            box-shadow: 0 0 0 2px rgba(230,57,70,0.1);
+        }
         .login-btn {
             width: 100%;
             padding: 15px;
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             border: none;
             border-radius: 40px;
@@ -128,6 +138,11 @@
             cursor: pointer;
             margin-bottom: 10px;
             font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .login-btn:hover {
+            background: linear-gradient(135deg, #c92a3a, #e63946);
+            transform: translateY(-1px);
         }
         .remember-checkbox {
             display: flex;
@@ -140,6 +155,7 @@
             width: 18px;
             height: 18px;
             cursor: pointer;
+            accent-color: #e63946;
         }
         .admin-section {
             background: #fff3e0;
@@ -168,7 +184,7 @@
             margin-bottom: 20px;
         }
         .users-table th {
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             padding: 12px;
             text-align: left;
@@ -236,8 +252,12 @@
             font-size: 0.95rem;
             -webkit-appearance: none;
         }
+        .add-user-field input:focus, .add-user-field select:focus {
+            border-color: #e63946;
+            outline: none;
+        }
         .btn-add-user {
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             border: none;
             padding: 12px 20px;
@@ -245,6 +265,11 @@
             font-weight: 700;
             cursor: pointer;
             font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .btn-add-user:hover {
+            background: linear-gradient(135deg, #c92a3a, #e63946);
+            transform: translateY(-1px);
         }
         .tabs-container {
             display: flex;
@@ -264,6 +289,7 @@
             min-width: 100px;
             font-size: 0.9rem;
             white-space: nowrap;
+            transition: all 0.3s;
         }
         @media (min-width: 768px) {
             .tab-btn {
@@ -273,8 +299,13 @@
             }
         }
         .tab-btn.active {
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
+            box-shadow: 0 2px 8px rgba(230,57,70,0.3);
+        }
+        .tab-btn:hover:not(.active) {
+            background: #fee2e2;
+            color: #e63946;
         }
         .tab-content {
             display: none;
@@ -333,7 +364,7 @@
         .section-title {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #1d4a72;
+            color: #e63946;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
@@ -358,6 +389,11 @@
             border: 1px solid #b9cfe6;
             flex: 1;
             min-width: 200px;
+            transition: all 0.3s;
+        }
+        .input-field:focus-within {
+            border-color: #e63946;
+            box-shadow: 0 0 0 2px rgba(230,57,70,0.1);
         }
         .input-field input, .input-field select, .input-field textarea {
             width: 100%;
@@ -373,7 +409,7 @@
             min-height: 60px;
         }
         .btn-add {
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             border: none;
             padding: 14px 20px;
@@ -382,7 +418,12 @@
             cursor: pointer;
             white-space: nowrap;
             font-size: 1rem;
+            transition: all 0.3s;
             width: 100%;
+        }
+        .btn-add:hover {
+            background: linear-gradient(135deg, #c92a3a, #e63946);
+            transform: translateY(-1px);
         }
         @media (min-width: 768px) {
             .btn-add {
@@ -390,22 +431,30 @@
             }
         }
         .btn-edit {
-            background: #ff9f4b;
+            background: #f39c12;
             color: white;
             border: none;
             padding: 8px 12px;
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        .btn-edit:hover {
+            background: #e67e22;
         }
         .btn-validate {
-            background: #2b8c5e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        .btn-validate:hover {
+            background: linear-gradient(135deg, #c92a3a, #e63946);
         }
         .btn-delete {
             background: transparent;
@@ -414,13 +463,13 @@
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.85rem;
+            transition: all 0.3s;
         }
         .btn-delete:hover {
-            background: #ff5252;
+            background: #ef4444;
             color: white;
-            border-color: #ff5252;
+            border-color: #ef4444;
         }
-        /* 新增：导航按钮样式 */
         .btn-navigate {
             background: #4285f4;
             color: white;
@@ -455,7 +504,7 @@
         .order-card.en_attente { border-left-color: #ff9800; }
         .order-card.prepare { border-left-color: #2196f3; }
         .order-card.en_cours { border-left-color: #9c27b0; }
-        .order-card.livre { border-left-color: #4caf50; background: #e8f5e9; }
+        .order-card.livre { border-left-color: #e63946; background: #fef2f2; }
         .task-card {
             background: white;
             border-radius: 20px;
@@ -513,6 +562,7 @@
         .status-badge.livre { background: #c8e6c9; color: #1b5e20; }
         .status-badge.todo { background: #fff3e0; color: #e65100; }
         .status-badge.done { background: #c8e6c9; color: #1b5e20; }
+        .status-badge.responsable { background: #e1bee7; color: #4a148c; }
         .order-meta {
             display: flex;
             flex-direction: column;
@@ -539,10 +589,10 @@
             margin-bottom: 30px;
         }
         .driver-group h4 {
-            color: #1d4a72;
+            color: #e63946;
             margin: 20px 0 10px;
             padding-bottom: 5px;
-            border-bottom: 2px solid #b9cfe6;
+            border-bottom: 2px solid #fecaca;
             font-size: 1rem;
         }
         .dual-date-section {
@@ -575,6 +625,12 @@
             border: 2px solid #b9cfe6;
             border-radius: 30px;
             font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .date-picker-input:focus {
+            border-color: #e63946;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(230,57,70,0.1);
         }
         .route-header {
             display: flex;
@@ -594,7 +650,7 @@
             font-size: 1.2rem;
         }
         .route-status {
-            background: #2f6d9e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             padding: 5px 15px;
             border-radius: 30px;
@@ -722,7 +778,7 @@
             margin-top: 10px;
         }
         .view-signature-btn {
-            background: #ff9f4b;
+            background: #f39c12;
             color: white;
             border: none;
             padding: 4px 10px;
@@ -773,7 +829,7 @@
             font-size: 0.95rem;
         }
         .geocode-btn {
-            background: #4a6fa5;
+            background: #e63946;
             color: white;
             border: none;
             padding: 8px 16px;
@@ -782,6 +838,10 @@
             font-size: 0.9rem;
             margin-top: 10px;
             width: 100%;
+            transition: all 0.3s;
+        }
+        .geocode-btn:hover {
+            background: #c92a3a;
         }
         .confirm-modal {
             position: fixed;
@@ -820,13 +880,17 @@
             justify-content: center;
         }
         .confirm-btn-yes {
-            background: #2b8c5e;
+            background: linear-gradient(135deg, #e63946, #ff6b6b);
             color: white;
             border: none;
             padding: 12px 30px;
             border-radius: 40px;
             font-weight: 700;
             cursor: pointer;
+            transition: all 0.3s;
+        }
+        .confirm-btn-yes:hover {
+            background: linear-gradient(135deg, #c92a3a, #e63946);
         }
         .confirm-btn-no {
             background: #ff5252;
@@ -838,7 +902,7 @@
             cursor: pointer;
         }
         .palette-count-badge {
-            background: #2f6d9e;
+            background: #e63946;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
@@ -851,7 +915,7 @@
             border-radius: 30px;
             padding: 16px;
             margin-bottom: 20px;
-            border: 2px solid #2f6d9e;
+            border: 2px solid #e63946;
         }
         .driver-selector-title {
             color: #1d4a72;
@@ -868,10 +932,11 @@
             background: white;
             cursor: pointer;
             outline: none;
-            transition: border 0.2s;
+            transition: all 0.3s;
         }
         .driver-selector:focus {
-            border-color: #2f6d9e;
+            border-color: #e63946;
+            box-shadow: 0 0 0 2px rgba(230,57,70,0.1);
         }
         .driver-selector option {
             padding: 10px;
@@ -896,7 +961,7 @@
             background-color: #ff9800;
         }
         .numbered-marker.livre {
-            background-color: #4caf50;
+            background-color: #e63946;
         }
         .start-marker {
             font-size: 30px;
@@ -939,7 +1004,6 @@
             height: 20px;
             border-radius: 4px;
         }
-        .status-badge.responsable { background: #e1bee7; color: #4a148c; }
         .user-type.responsable { background: #d1c4e9; color: #311b92; padding: 2px 10px; border-radius: 20px; }
         .responsible-section {
             background: #f3e5f5;
@@ -1063,9 +1127,8 @@
             margin-left: 5px;
         }
 
-        /* ========== 移动端响应式样式（仅在小屏幕生效，不影响电脑端） ========== */
+        /* ========== 移动端响应式样式 ========== */
         @media (max-width: 768px) {
-            /* 导航栏垂直排列 */
             .nav-bar {
                 flex-direction: column;
             }
@@ -1078,7 +1141,6 @@
                 justify-content: center;
                 gap: 8px;
             }
-            /* 标签页可滚动 */
             .tabs-container {
                 overflow-x: auto;
                 flex-wrap: nowrap;
@@ -1088,39 +1150,31 @@
             .tab-btn {
                 flex-shrink: 0;
             }
-            /* 主布局垂直 */
             .main-layout {
                 flex-direction: column;
             }
-            /* 地图高度降低 */
             #map {
                 height: 300px;
             }
-            /* 卡片内边距减小 */
             .order-card, .task-card, .transport-card {
                 padding: 12px;
             }
-            /* 订单头部垂直排列 */
             .item-header {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            /* 操作按钮换行 */
             .order-actions {
                 justify-content: flex-start;
             }
-            /* 模态框宽度 */
             .modal-box {
                 width: 90%;
                 margin: 0 auto;
             }
-            /* 用户表格横向滚动 */
             .users-table {
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
             }
-            /* 添加用户表单垂直 */
             .add-user-form {
                 flex-direction: column;
             }
@@ -1130,11 +1184,9 @@
             .btn-add-user {
                 width: 100%;
             }
-            /* 司机选择器 */
             .driver-selector-container {
                 padding: 12px;
             }
-            /* 确认框 */
             .confirm-box {
                 width: 90%;
                 padding: 20px;
@@ -1146,7 +1198,6 @@
             .confirm-actions button {
                 width: 100%;
             }
-            /* 计数器垂直 */
             .counter-container {
                 flex-direction: column;
                 align-items: flex-start;
@@ -1156,7 +1207,6 @@
                 width: 100%;
                 justify-content: center;
             }
-            /* 路线步骤 */
             .route-steps li {
                 padding: 12px;
             }
@@ -1164,11 +1214,9 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            /* 双日期选择 */
             .dual-date-section {
                 flex-direction: column;
             }
-            /* 网格布局 */
             .grid-2 {
                 grid-template-columns: 1fr;
             }
@@ -1191,58 +1239,59 @@
                 font-size: 0.7rem;
             }
         }
-        /* ========== 新增：折叠面板样式 ========== */
-.collapsible-header {
-    background: #eef2f7;
-    border-radius: 16px;
-    padding: 12px 16px;
-    margin: 10px 0 5px 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: background 0.2s;
-    user-select: none;
-}
-.collapsible-header:hover {
-    background: #e2e8f0;
-}
-.collapsible-header h4, .collapsible-header strong, .collapsible-header h3 {
-    margin: 0;
-    font-size: 1rem;
-    color: #1d4a72;
-}
-.toggle-icon {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #2f6d9e;
-}
-.collapsible-content {
-    padding-left: 8px;
-    overflow: hidden;
-}
-.collapsible-content.collapsed {
-    display: none;
-}
 
-/* 逾期任务卡片红色背景 */
-.task-card.overdue {
-    background: #ffebee;
-    border-left: 6px solid #f44336;
-}
+        /* ========== 折叠面板样式 ========== */
+        .collapsible-header {
+            background: #fee2e2;
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin: 10px 0 5px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            background: #fecaca;
+        }
+        .collapsible-header h4, .collapsible-header strong, .collapsible-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #1d4a72;
+        }
+        .toggle-icon {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #e63946;
+        }
+        .collapsible-content {
+            padding-left: 8px;
+            overflow: hidden;
+        }
+        .collapsible-content.collapsed {
+            display: none;
+        }
 
-/* 任务计数徽章 */
-.task-badge {
-    background-color: #ff4444;
-    color: white;
-    border-radius: 50px;
-    padding: 2px 8px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    margin-left: 8px;
-    display: inline-block;
-}
-.tab-btn.active .task-badge {
-    background-color: #ff8888;
-    color: #2c2c2c;
-}
+        /* 逾期任务卡片红色背景 */
+        .task-card.overdue {
+            background: #ffebee;
+            border-left: 6px solid #f44336;
+        }
+
+        /* 任务计数徽章 */
+        .task-badge {
+            background-color: #e63946;
+            color: white;
+            border-radius: 50px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 8px;
+            display: inline-block;
+        }
+        .tab-btn.active .task-badge {
+            background-color: #ff8888;
+            color: #2c2c2c;
+        }
