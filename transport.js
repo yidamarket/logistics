@@ -979,10 +979,11 @@ window.deleteUser = async function(username) {
         alert('Erreur: ' + error.message);
     }
 };
-            window.viewSignature = function(signatureData) {
-                viewSignatureImage.src = signatureData;
-                viewSignatureModal.style.display = 'flex';
-            };
+          window.viewSignature = function(signatureData) {
+    viewSignatureImage.src = signatureData;
+    document.getElementById('viewSignatureTitle').textContent = '📝 Signature client';
+    viewSignatureModal.style.display = 'flex';
+};
 
             window.returnToDepot = async function() {
                 const confirmed = await showConfirm('Retour au dépôt', 'Confirmer le retour au dépôt ?');
@@ -2592,8 +2593,7 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
                 currentOrderId = null;
                 signaturePad?.clear();
             });
-
-         saveSignatureBtn.addEventListener('click', async () => {
+saveSignatureBtn.addEventListener('click', async () => {
     if (!currentOrderId || !signaturePad || signaturePad.isEmpty()) {
         alert('Signez svp');
         return;
@@ -2602,7 +2602,6 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
     const confirmed = await showConfirm('Valider', 'Confirmer la livraison ?');
     if (!confirmed) return;
     
-    // 获取 source_order_id
     const { data: order } = await supabase
         .from('orders')
         .select('source_order_id')
@@ -2610,23 +2609,24 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
         .single();
     
     const signatureData = signaturePad.toDataURL();
+    const now = getLocalISOString();  // 使用本地时间
+    
     const { error } = await supabase
         .from('orders')
         .update({
             status: ORDER_STATUS.LIVRE,
-            delivered_at: new Date().toISOString(),
+            delivered_at: now,  // 使用本地时间
             signature: signatureData
         })
         .eq('id', currentOrderId);
         
     if (!error) {
-        // 同步到 customer_orders
         if (order?.source_order_id) {
             await supabase
                 .from('customer_orders')
                 .update({ 
                     status: 'delivered',
-                    updated_at: new Date().toISOString()
+                    updated_at: now  // 使用本地时间
                 })
                 .eq('id', order.source_order_id);
         }
@@ -2698,12 +2698,24 @@ const chineseSms = `📦 Yida配送通知 – 今日送达
 
             if (timeType) timeType.addEventListener('change', renderTimeInput);
 
-            inputDatePicker.addEventListener('change', (e) => {
+          inputDatePicker.addEventListener('change', (e) => {
                 currentDate = e.target.value;
                 loadOrders();
+                
+                // 刷新司机出发面板（司机和管理员都刷新）
+                const container = document.getElementById('driverDepartureContainer');
+                const session = loadSession();
+                if (container && session) {
+                    if (session.userType === 'chauffeur') {
+                        // 司机：用当前日期重新渲染
+                        renderDriverDeparturePanel('driverDepartureContainer');
+                    } else {
+                        // 管理员：用当前日期刷新日志
+                        renderDriverLogsTable(container, e.target.value);
+                    }
+                }
             });
-
-            document.querySelectorAll('.tab-btn').forEach(btn => {
+                        document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
@@ -2968,4 +2980,585 @@ renderTasks = function(tasks) {
     
     tasksList.innerHTML = html;
 };
+// ============================================================
+// 司机每日出发确认功能
+// ============================================================
+
+const FUEL_CARD_OPTIONS = ['Navette', 'Nabil', 'Mehdi'];
+
+// ========== 工具函数 ==========
+function getTodayString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// ========== 格式化时间 ==========
+function formatTimeShort(timestamp) {
+    if (!timestamp) return '';
+    const d = new Date(timestamp);
+    // 直接使用本地时间显示
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+function formatDateShort(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// ========== 车牌号格式验证（AA-123-AA） ==========
+function validatePlateNumber(plate) {
+    const cleaned = plate.trim().toUpperCase();
+    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
+    if (!regex.test(cleaned)) {
+        return { valid: false, message: 'Format invalide. Utilisez: AA-123-AA (2 lettres - 3 chiffres - 2 lettres)' };
+    }
+    return { valid: true, message: '', formatted: cleaned };
+}
+
+// ========== 自动格式化车牌号 ==========
+function formatPlateInput(input) {
+    let value = input.value.toUpperCase();
+    value = value.replace(/[^A-Z0-9-]/g, '');
+    if (value.includes('-')) {
+        input.value = value;
+        return;
+    }
+    const clean = value.replace(/-/g, '');
+    let result = '';
+    if (clean.length > 0) {
+        result = clean.substring(0, 2);
+        if (clean.length > 2) {
+            result += '-' + clean.substring(2, 5);
+        }
+        if (clean.length > 5) {
+            result += '-' + clean.substring(5, 7);
+        }
+    }
+    input.value = result;
+}
+
+// ========== 检查今日是否已确认 ==========
+// ========== 检查指定日期是否已确认 ==========
+async function checkTodayLog(driverId, customDate) {
+    const targetDate = customDate || getTodayString();
+    const { data, error } = await supabase
+        .from('driver_daily_log')
+        .select('*')
+        .eq('driver_id', driverId)
+        .eq('date', targetDate)
+        .maybeSingle();
+    if (error && error.code !== 'PGRST116') {
+        console.error('检查记录失败:', error);
+        return null;
+    }
+    return data;
+}
+
+// ========== 保存今日出发记录 ==========
+// ========== 获取本地时间 ISO 字符串（解决时区问题） ==========
+function getLocalISOString() {
+    const now = new Date();
+    // 获取本地时区偏移（分钟）
+    const offset = now.getTimezoneOffset();
+    // 调整到本地时间
+    const localDate = new Date(now.getTime() - offset * 60000);
+    return localDate.toISOString();
+}
+// ========== 保存出发记录 ==========
+async function saveDailyLog(driverId, fuelCard, plateNumber, signatureData) {
+    const targetDate = currentDate || getTodayString();
+    const now = getLocalISOString();  // 使用本地时间
+    
+    const logData = {
+        driver_id: driverId,
+        date: targetDate,
+        fuel_card: fuelCard,
+        plate_number: plateNumber,
+        signature_data: signatureData,
+        signature_time: now,
+        departure_time: now,
+        status: 'confirmed'
+    };
+    
+    const existing = await checkTodayLog(driverId, targetDate);
+    
+    let result;
+    if (existing) {
+        result = await supabase
+            .from('driver_daily_log')
+            .update(logData)
+            .eq('id', existing.id);
+    } else {
+        result = await supabase
+            .from('driver_daily_log')
+            .insert(logData);
+    }
+    
+    if (result.error) {
+        console.error('保存出发记录失败:', result.error);
+        throw result.error;
+    }
+    
+    return result.data;
+}
+// ========== 获取司机的历史记录 ==========
+async function getDriverLogs(filters = {}) {
+    let query = supabase
+        .from('driver_daily_log')
+        .select('*, users:driver_id (username, user_type)')
+        .order('departure_time', { ascending: false });
+    if (filters.date) query = query.eq('date', filters.date);
+    if (filters.startDate) query = query.gte('date', filters.startDate);
+    if (filters.endDate) query = query.lte('date', filters.endDate);
+    if (filters.driverId) query = query.eq('driver_id', filters.driverId);
+    const { data, error } = await query;
+    if (error) {
+        console.error('获取司机日志失败:', error);
+        return [];
+    }
+    return data;
+}
+
+// ========== 签名画板 ==========
+let departureSignaturePad = null;
+
+function initDepartureSignaturePad() {
+    const canvas = document.getElementById('departureSignatureCanvas');
+    if (!canvas) return;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const width = Math.min(rect.width - 20, 400);
+    canvas.width = width;
+    canvas.height = 150;
+    canvas.style.width = width + 'px';
+    canvas.style.height = '150px';
+    departureSignaturePad = new SignaturePad(canvas, {
+        backgroundColor: '#f8fafc',
+        penColor: '#1a2a4a',
+        minWidth: 2,
+        maxWidth: 4
+    });
+    window.addEventListener('resize', function resizeDepartureSig() {
+        if (departureSignaturePad) {
+            const data = departureSignaturePad.toData();
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const w = Math.min(rect.width - 20, 400);
+            canvas.width = w;
+            canvas.height = 150;
+            canvas.style.width = w + 'px';
+            canvas.style.height = '150px';
+            departureSignaturePad.fromData(data);
+        }
+    });
+}
+
+function clearDepartureSignature() {
+    if (departureSignaturePad) departureSignaturePad.clear();
+}
+
+// ========== 确认出发 ==========
+// ========== 确认出发 ==========
+async function confirmDeparture() {
+    const session = loadSession();
+    if (!session) {
+        alert('Veuillez vous reconnecter.');
+        return;
+    }
+    
+    const fuelCard = document.getElementById('fuelCardSelect')?.value;
+    const plateInput = document.getElementById('plateNumberInput');
+    let plateNumber = plateInput?.value?.trim() || '';
+    
+    if (!fuelCard) {
+        alert('Veuillez sélectionner une carte carburant.');
+        return;
+    }
+    if (!plateNumber) {
+        alert('Veuillez saisir le numéro de plaque d\'immatriculation.');
+        return;
+    }
+    
+    const validation = validatePlateNumber(plateNumber);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+    plateNumber = validation.formatted;
+    
+    if (!departureSignaturePad || departureSignaturePad.isEmpty()) {
+        alert('Veuillez signer avant de confirmer.');
+        return;
+    }
+    
+    const signatureData = departureSignaturePad.toDataURL('image/png');
+    
+    try {
+        await saveDailyLog(session.id, fuelCard, plateNumber, signatureData);
+        alert('✅ Départ confirmé avec succès !');
+        renderDriverDeparturePanel('driverDepartureContainer');
+    } catch (error) {
+        alert('❌ Erreur: ' + error.message);
+    }
+}
+
+function resetDeparture() {
+    const container = document.getElementById('driverDepartureContainer');
+    if (container) {
+        container.innerHTML = '';
+        renderDriverDeparturePanel('driverDepartureContainer');
+    }
+}
+
+// ========== 查看司机签名 ==========
+function viewDriverSignature(logId) {
+    const logs = window._driverLogsData || [];
+    const log = logs.find(l => String(l.id) === String(logId));
+    if (!log || !log.signature_data) {
+        alert('Signature non disponible.');
+        return;
+    }
+    const modal = document.getElementById('viewSignatureModal');
+    const img = document.getElementById('viewSignatureImage');
+    const title = document.getElementById('viewSignatureTitle');
+    if (modal && img) {
+        if (title) title.textContent = '📝 Signature chauffeur';
+        img.src = log.signature_data;
+        modal.style.display = 'flex';
+    }
+}
+
+// ========== 编辑司机日志 ==========
+let currentEditLogId = null;
+
+function editDriverLog(logId) {
+    const logs = window._driverLogsData || [];
+    const log = logs.find(l => String(l.id) === String(logId));
+    if (!log) {
+        alert('Enregistrement non trouvé.');
+        return;
+    }
+    currentEditLogId = logId;
+    document.getElementById('editDriverLogFuelCard').value = log.fuel_card || 'Navette';
+    document.getElementById('editDriverLogPlate').value = log.plate_number || '';
+    document.getElementById('editDriverLogModal').style.display = 'flex';
+}
+
+async function saveEditDriverLog() {
+    if (!currentEditLogId) return;
+    const fuelCard = document.getElementById('editDriverLogFuelCard').value;
+    const plateInput = document.getElementById('editDriverLogPlate');
+    let plateNumber = plateInput?.value?.trim() || '';
+    if (!plateNumber) {
+        alert('Veuillez saisir le numéro de plaque.');
+        return;
+    }
+    const validation = validatePlateNumber(plateNumber);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+    plateNumber = validation.formatted;
+    const { error } = await supabase
+        .from('driver_daily_log')
+        .update({
+            fuel_card: fuelCard,
+            plate_number: plateNumber,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', currentEditLogId);
+    if (error) {
+        alert('❌ Erreur: ' + error.message);
+        return;
+    }
+    document.getElementById('editDriverLogModal').style.display = 'none';
+    currentEditLogId = null;
+    alert('✅ Enregistrement modifié avec succès !');
+    const container = document.getElementById('driverDepartureContainer');
+    if (container) renderDriverLogsTable(container, getTodayString());
+}
+
+// ========== 删除司机日志 ==========
+async function deleteDriverLog(logId) {
+    const confirmed = await showConfirm('Supprimer', 'Supprimer cet enregistrement ?');
+    if (!confirmed) return;
+    const { error } = await supabase.from('driver_daily_log').delete().eq('id', logId);
+    if (error) {
+        alert('❌ Erreur: ' + error.message);
+        return;
+    }
+    alert('✅ Enregistrement supprimé !');
+    const container = document.getElementById('driverDepartureContainer');
+    if (container) renderDriverLogsTable(container, getTodayString());
+}
+
+// ========== 加载并渲染日志 ==========
+function loadAndRenderLogs(container, filters) {
+    getDriverLogs(filters).then(logs => {
+        window._driverLogsData = logs;
+        const selectedDriver = document.getElementById('adminDriverSelect')?.value || '';
+        const driverDisplay = selectedDriver ? ` - ${selectedDriver}` : ' (Tous)';
+        const dateDisplay = filters.date ? formatDateShort(filters.date) : getTodayString();
+        if (!logs || logs.length === 0) {
+            container.innerHTML = `
+                <div class="departure-panel logs-panel">
+                    <div class="departure-header">
+                        <span class="departure-icon">📋</span>
+                        <span class="departure-title">Journal des chauffeurs</span>
+                        <span class="log-count">${dateDisplay}${driverDisplay}</span>
+                    </div>
+                    <p style="text-align:center;color:#8899bb;padding:20px;">Aucun enregistrement pour cette journée.</p>
+                </div>
+            `;
+            return;
+        }
+        let html = `
+            <div class="departure-panel logs-panel">
+                <div class="departure-header">
+                    <span class="departure-icon">📋</span>
+                    <span class="departure-title">Journal des chauffeurs</span>
+                    <span class="log-count">${logs.length} enregistrement${logs.length > 1 ? 's' : ''} - ${dateDisplay}${driverDisplay}</span>
+                </div>
+                <div class="logs-table-wrapper">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>👤 Chauffeur</th>
+                                <th>⛽ Carte</th>
+                                <th>🚗 Plaque</th>
+                                <th>🕒 Départ</th>
+                                <th>📝 Signature chauffeur</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        for (const log of logs) {
+            const driverName = log.users?.username || 'Inconnu';
+            const statusClass = log.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
+            const statusLabel = log.status === 'confirmed' ? '✅ Confirmé' : '⏳ En attente';
+            const hasSignature = log.signature_data ? '✅' : '❌';
+            html += `
+                <tr>
+                    <td><strong>${driverName}</strong></td>
+                    <td>${log.fuel_card}</td>
+                    <td>${log.plate_number}</td>
+                    <td>${formatTimeShort(log.departure_time)}</td>
+                    <td>
+                        ${hasSignature}
+                        ${log.signature_data ? `<button class="btn-view-signature" onclick="viewDriverSignature('${log.id}')">👁️ Voir</button>` : ''}
+                    </td>
+                    <td><span class="${statusClass}">${statusLabel}</span></td>
+                    <td>
+                        <button class="btn-edit" onclick="editDriverLog('${log.id}')" title="Modifier">✏️</button>
+                        <button class="btn-delete" onclick="deleteDriverLog('${log.id}')" title="Supprimer">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }
+        html += `</tbody></table></div></div>`;
+        container.innerHTML = html;
+    });
+}
+
+// ========== 管理员查看司机日志表格 ==========
+// ========== 管理员查看司机日志表格（支持日期参数） ==========
+function renderDriverLogsTable(container, customDate) {
+    const session = loadSession();
+    if (!session) return;
+    
+    const adminTypes = ['admin', 'manager', 'responsable', 'secretaire'];
+    if (!adminTypes.includes(session.userType)) {
+        container.innerHTML = `
+            <div class="departure-panel">
+                <p style="text-align:center;color:#8899bb;padding:20px;">
+                    📋 Cette section est réservée aux administrateurs.
+                </p>
+            </div>
+        `;
+        return;
+    }
+    
+    const targetDate = customDate || getTodayString();
+    const selectedDriver = document.getElementById('adminDriverSelect')?.value || '';
+    const filters = { date: targetDate };
+    
+    if (selectedDriver) {
+        supabase
+            .from('users')
+            .select('id')
+            .eq('username', selectedDriver)
+            .eq('user_type', 'chauffeur')
+            .single()
+            .then(({ data: user }) => {
+                if (user) filters.driverId = user.id;
+                loadAndRenderLogs(container, filters);
+            })
+            .catch(() => loadAndRenderLogs(container, filters));
+    } else {
+        loadAndRenderLogs(container, filters);
+    }
+}
+// ========== 渲染司机出发确认面板 ==========
+// ========== 渲染司机出发确认面板（根据日期检查订单） ==========
+function renderDriverDeparturePanel(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const session = loadSession();
+    if (!session) {
+        container.innerHTML = '<p style="color:#999;padding:10px;">请先登录</p>';
+        return;
+    }
+    
+    // 管理员看到日志表格
+    if (session.userType !== 'chauffeur') {
+        renderDriverLogsTable(container, currentDate);
+        return;
+    }
+    
+    // ===== 司机：检查当前日期是否有订单 =====
+    const checkDate = currentDate || getTodayString();
+    
+    supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('date', checkDate)
+        .eq('driver', session.username)
+        .then(({ count, error }) => {
+            if (error) {
+                console.error('检查订单失败:', error);
+                container.innerHTML = '<p style="color:#999;padding:10px;">Erreur de chargement</p>';
+                return;
+            }
+            
+            // 没有订单 → 显示提示
+            if (count === 0) {
+                container.innerHTML = `
+                    <div class="departure-panel" style="border-left:5px solid #8899bb; background:#f8f9fc;">
+                        <div class="departure-header">
+                            <span class="departure-icon">📋</span>
+                            <span class="departure-title" style="color:#8899bb;">Aucune commande aujourd'hui</span>
+                        </div>
+                        <p style="color:#8899bb;padding:10px 0;margin:0;">
+                            Vous n'avez pas de livraison prévue le ${formatDateShort(checkDate)}.
+                            <br>Pas besoin de confirmer le départ.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 有订单 → 检查今日是否已确认出发
+            checkTodayLog(session.id, checkDate).then(log => {
+                if (log) {
+                    // 已确认
+                    container.innerHTML = `
+                        <div class="departure-panel confirmed">
+                            <div class="departure-header">
+                                <span class="departure-icon">✅</span>
+                                <span class="departure-title">Départ confirmé</span>
+                                <span class="log-count">${formatDateShort(checkDate)}</span>
+                            </div>
+                            <div class="departure-details">
+                                <div class="departure-row"><span class="label">📅 Date</span><span>${formatDateShort(log.date)}</span></div>
+                                <div class="departure-row"><span class="label">⛽ Carte</span><span>${log.fuel_card}</span></div>
+                                <div class="departure-row"><span class="label">🚗 Plaque</span><span>${log.plate_number}</span></div>
+                                <div class="departure-row"><span class="label">🕒 Départ</span><span>${formatTimeShort(log.departure_time)}</span></div>
+                                <div class="departure-row"><span class="label">📝 Signature</span><span>${log.signature_data ? '✅ Signé' : '❌ Non signé'}</span></div>
+                            </div>
+                            <button class="btn-departure-edit" onclick="resetDeparture()">🔄 Modifier</button>
+                        </div>
+                    `;
+                } else {
+                    // 未确认 - 显示填写表单
+                    container.innerHTML = `
+                        <div class="departure-panel pending">
+                            <div class="departure-header">
+                                <span class="departure-icon">🚀</span>
+                                <span class="departure-title">Confirmation de départ</span>
+                                <span class="log-count">${formatDateShort(checkDate)}</span>
+                            </div>
+                            <div class="departure-form">
+                                <div class="departure-row"><span class="label">📅 Date</span><span>${formatDateShort(checkDate)}</span></div>
+                                <div class="departure-row"><span class="label">👤 Chauffeur</span><span>${session.username}</span></div>
+                                <div class="departure-row">
+                                    <span class="label">⛽ Carte</span>
+                                    <select id="fuelCardSelect" class="departure-select">
+                                        ${FUEL_CARD_OPTIONS.map(c => `<option value="${c}">${c}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="departure-row">
+                                    <span class="label">🚗 Plaque</span>
+                                    <input type="text" id="plateNumberInput" class="departure-input" 
+                                           placeholder="ex: AB-123-CD" maxlength="10"
+                                           oninput="formatPlateInput(this)" style="text-transform:uppercase;">
+                                </div>
+                                <div class="departure-row signature-row">
+                                    <span class="label">📝 Signature</span>
+                                    <div class="signature-wrapper">
+                                        <canvas id="departureSignatureCanvas" class="departure-signature-canvas"></canvas>
+                                        <button class="btn-signature-clear" onclick="clearDepartureSignature()">✏️ Effacer</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-departure-confirm" onclick="confirmDeparture()">✅ Confirmer le départ</button>
+                        </div>
+                    `;
+                    setTimeout(initDepartureSignaturePad, 100);
+                }
+            });
+        });
+}
+
+// ========== 初始化 ==========
+function initDriverDeparture() {
+    const container = document.getElementById('driverDepartureContainer');
+    if (container) renderDriverDeparturePanel('driverDepartureContainer');
+}
+
+// ========== 绑定编辑模态框事件 ==========
+document.getElementById('cancelEditDriverLogBtn')?.addEventListener('click', function() {
+    document.getElementById('editDriverLogModal').style.display = 'none';
+    currentEditLogId = null;
+});
+document.getElementById('saveEditDriverLogBtn')?.addEventListener('click', saveEditDriverLog);
+document.getElementById('editDriverLogPlate')?.addEventListener('input', function() {
+    formatPlateInput(this);
+});
+
+// ========== 监听司机选择器变化 ==========
+if (adminDriverSelect) {
+    adminDriverSelect.addEventListener('change', function() {
+        const container = document.getElementById('driverDepartureContainer');
+        if (container) {
+            const session = loadSession();
+            if (session && session.userType !== 'chauffeur') {
+                renderDriverLogsTable(container, getTodayString());
+            }
+        }
+    });
+}
+
+// ========== 暴露函数到全局 ==========
+window.confirmDeparture = confirmDeparture;
+window.clearDepartureSignature = clearDepartureSignature;
+window.resetDeparture = resetDeparture;
+window.viewDriverSignature = viewDriverSignature;
+window.editDriverLog = editDriverLog;
+window.deleteDriverLog = deleteDriverLog;
+window.formatPlateInput = formatPlateInput;
+window.validatePlateNumber = validatePlateNumber;
+window.initDriverDeparture = initDriverDeparture;
+
+// ========== 页面加载初始化 ==========
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initDriverDeparture, 500);
+} else {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initDriverDeparture, 500);
+    });
+}
    })();

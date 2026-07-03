@@ -33,31 +33,56 @@
     </div>
 
     <!-- 签名模态框 -->
-    <div id="signatureModal" class="modal-overlay" style="display: none;">
+    <!-- 客户签名输入框 -->
+<div id="signatureModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <h3 id="signatureModalTitle">📝 Signature client</h3>
+        <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+        <div class="signature-actions">
+            <button class="btn-delete" id="clearSignatureBtn">Effacer</button>
+            <button class="btn-validate" id="saveSignatureBtn">Valider la signature</button>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-delete" id="cancelSignatureBtn">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- 查看签名模态框（通用） -->
+<div id="viewSignatureModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <h3 id="viewSignatureTitle">📝 Signature</h3>
+        <img id="viewSignatureImage" src="" alt="Signature" style="max-width:100%; border:2px solid #b9cfe6; border-radius:20px;">
+        <div class="modal-actions">
+            <button class="btn-delete" id="closeViewSignatureBtn">Fermer</button>
+        </div>
+    </div>
+</div>
+  <!-- ========== 编辑司机日志模态框（新增） ========== -->
+    <div id="editDriverLogModal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
-            <h3>📝 Signature client</h3>
-            <canvas id="signatureCanvas" class="signature-canvas"></canvas>
-            <div class="signature-actions">
-                <button class="btn-delete" id="clearSignatureBtn">Effacer</button>
-                <button class="btn-validate" id="saveSignatureBtn">Valider la signature</button>
+            <h3>✏️ Modifier l'enregistrement</h3>
+            <div class="input-field" style="margin-bottom:15px;">
+                <label style="display:block;font-weight:600;margin-bottom:5px;color:#1d4a72;">⛽ Carte carburant</label>
+                <select id="editDriverLogFuelCard" style="width:100%;padding:12px;border-radius:16px;border:2px solid #dce5ef;font-size:15px;">
+                    <option value="Navette">Navette</option>
+                    <option value="Nabil">Nabil</option>
+                    <option value="Mehdi">Mehdi</option>
+                </select>
+            </div>
+            <div class="input-field" style="margin-bottom:15px;">
+                <label style="display:block;font-weight:600;margin-bottom:5px;color:#1d4a72;">🚗 Plaque d'immatriculation</label>
+                <input type="text" id="editDriverLogPlate" 
+                       placeholder="ex: AB-123-CD" maxlength="10"
+                       style="width:100%;padding:12px;border-radius:16px;border:2px solid #dce5ef;font-size:15px;text-transform:uppercase;">
+                <div style="font-size:0.75rem;color:#999;margin-top:5px;">Format: AA-123-AA (2 lettres - 3 chiffres - 2 lettres)</div>
             </div>
             <div class="modal-actions">
-                <button class="btn-delete" id="cancelSignatureBtn">Annuler</button>
+                <button class="btn-delete" id="cancelEditDriverLogBtn">Annuler</button>
+                <button class="btn-validate" id="saveEditDriverLogBtn" style="background:#e63946;">💾 Enregistrer</button>
             </div>
         </div>
     </div>
-
-    <!-- 查看签名模态框 -->
-    <div id="viewSignatureModal" class="modal-overlay" style="display: none;">
-        <div class="modal-box">
-            <h3>📝 Signature client</h3>
-            <img id="viewSignatureImage" src="" alt="Signature" style="max-width:100%; border:2px solid #b9cfe6; border-radius:20px;">
-            <div class="modal-actions">
-                <button class="btn-delete" id="closeViewSignatureBtn">Fermer</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 编辑订单模态框 -->
     <div id="editOrderModal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
@@ -272,7 +297,9 @@
                     <input type="date" id="inputDate" class="date-picker-input">
                 </div>
             </div>
-            
+                    <!-- ========== 新增：司机出发确认面板 ========== -->
+            <div id="driverDepartureContainer"></div>
+            <!-- ========== 新增结束 ========== -->
             <!-- 管理员司机选择器 -->
             <div class="driver-selector-container" id="adminDriverSelector" style="display: none;">
                 <div class="driver-selector-title">👤 Sélectionner un chauffeur</div>
