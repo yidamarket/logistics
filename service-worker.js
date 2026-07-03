@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE_NAME = 'livreurs-app-v2.98'; // 改这里来更新版本
+const CACHE_NAME = 'livreurs-app-v3.00'; // 改这里来更新版本
 
 // 需要缓存的资源
 const urlsToCache = [
@@ -8,7 +8,8 @@ const urlsToCache = [
    '/admin/admin.html',
   '/stock.html',
   '/rh.html',
-   '/transport.html'
+   '/transport.html',
+   '/transport.js'
 ];
 
 // 安装Service Worker
